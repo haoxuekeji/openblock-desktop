@@ -1,15 +1,15 @@
-import {ipcRenderer, remote, shell} from 'electron';
+import { ipcRenderer, remote, shell } from 'electron';
 import bindAll from 'lodash.bindall';
 import omit from 'lodash.omit';
 import PropTypes from 'prop-types';
 import React from 'react';
 import ReactDOM from 'react-dom';
-import {connect} from 'react-redux';
-import {compose} from 'redux';
+import { connect } from 'react-redux';
+import { compose } from 'redux';
 import GUI from 'openblock-gui/src/index';
 import VM from 'openblock-vm';
 
-import analytics, {initialAnalytics} from 'openblock-gui/src/lib/analytics';
+import analytics, { initialAnalytics } from 'openblock-gui/src/lib/analytics';
 import MessageBoxType from 'openblock-gui/src/lib/message-box.js';
 import AppStateHOC from 'openblock-gui/src/lib/app-state-hoc.jsx';
 import {
@@ -26,12 +26,14 @@ import {
     closeLoadingProject,
     openUpdateModal
 } from 'openblock-gui/src/reducers/modals';
-import {setUpdate} from 'openblock-gui/src/reducers/update';
+import { setUpdate } from 'openblock-gui/src/reducers/update';
 
 import ElectronStorageHelper from '../common/ElectronStorageHelper';
 
 import styles from './app.css';
 
+import API from 'openblock-gui/src/lib/api'
+window.api = API
 // override window.open so that it uses the OS's default browser, not an electron browser
 window.open = function (url, target) {
     if (target === '_blank') {
@@ -47,7 +49,7 @@ GUI.setAppElement(appTarget);
 
 const ScratchDesktopHOC = function (WrappedComponent) {
     class ScratchDesktopComponent extends React.Component {
-        constructor (props) {
+        constructor(props) {
             super(props);
             bindAll(this, [
                 'handleClickCheckUpdate',
@@ -97,48 +99,48 @@ const ScratchDesktopHOC = function (WrappedComponent) {
             });
             this.platform = null;
         }
-        componentDidMount () {
+        componentDidMount() {
             ipcRenderer.on('setTitleFromSave', this.handleSetTitleFromSave);
             ipcRenderer.on('setUpdate', (event, args) => {
                 this.props.onSetUpdate(args);
             });
             ipcRenderer.on('setUserId', (event, args) => {
-                initialAnalytics(args);
+                //initialAnalytics(args);
                 // Register "base" page view
-                analytics.pageview('/', null, 'desktop');
+                //analytics.pageview('/', null, 'desktop');
             });
             ipcRenderer.on('setPlatform', (event, args) => {
                 this.platform = args;
             });
         }
-        componentWillUnmount () {
+        componentWillUnmount() {
             ipcRenderer.removeListener('setTitleFromSave', this.handleSetTitleFromSave);
         }
-        handleClickLogo () {
+        handleClickLogo() {
             ipcRenderer.send('open-about-window');
         }
-        handleClickCheckUpdate () {
+        handleClickCheckUpdate() {
             ipcRenderer.send('reqeustCheckUpdate');
         }
-        handleClickUpgrade () {
+        handleClickUpgrade() {
             ipcRenderer.send('reqeustUpgrade');
         }
-        handleClickClearCache () {
+        handleClickClearCache() {
             ipcRenderer.send('clearCache');
         }
-        handleClickInstallDriver () {
+        handleClickInstallDriver() {
             ipcRenderer.send('installDriver');
         }
-        handleProjectTelemetryEvent (event, metadata) {
+        handleProjectTelemetryEvent(event, metadata) {
             ipcRenderer.send(event, metadata);
         }
-        handleSetTitleFromSave (event, args) {
+        handleSetTitleFromSave(event, args) {
             this.handleUpdateProjectTitle(args.title);
         }
-        handleStorageInit (storageInstance) {
+        handleStorageInit(storageInstance) {
             storageInstance.addHelper(new ElectronStorageHelper(storageInstance));
         }
-        handleShowMessageBox (type, message) {
+        handleShowMessageBox(type, message) {
             /**
              * To avoid the electron bug: the input-box lose focus after call alert or confirm on windows platform.
              * https://github.com/electron/electron/issues/19977
@@ -168,16 +170,16 @@ const ScratchDesktopHOC = function (WrappedComponent) {
             }
             return alert(message); // eslint-disable-line no-alert
         }
-        handleTelemetryModalOptIn () {
+        handleTelemetryModalOptIn() {
             ipcRenderer.send('setTelemetryDidOptIn', true);
         }
-        handleTelemetryModalOptOut () {
+        handleTelemetryModalOptOut() {
             ipcRenderer.send('setTelemetryDidOptIn', false);
         }
-        handleUpdateProjectTitle (newTitle) {
-            this.setState({projectTitle: newTitle});
+        handleUpdateProjectTitle(newTitle) {
+            this.setState({ projectTitle: newTitle });
         }
-        render () {
+        render() {
             const shouldShowTelemetryModal = (typeof ipcRenderer.sendSync('getTelemetryDidOptIn') !== 'boolean');
 
             const childProps = omit(this.props, Object.keys(ScratchDesktopComponent.propTypes));
