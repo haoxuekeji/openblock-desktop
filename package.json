@@ -80,7 +80,7 @@
     "nets": "^3.2.0",
     "node-localstorage": "^2.1.6",
     "npm-force-resolutions": "0.0.10",
-    "openblock-gui": "github:haoxuekeji/openblock-gui.git#desktop-haoxue",
+    "openblock-gui": "git+https://github.com/haoxuekeji/openblock-gui.git#desktop-haoxue",
     "openblock-l10n": "git+https://github.com/haoxuekeji/openblock-l10n.git#main",
     "os-locale": "^5.0.0",
     "react": "^16.14.0",
