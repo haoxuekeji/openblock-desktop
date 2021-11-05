@@ -22,7 +22,7 @@ module.exports = defaultConfig =>
             ],
             plugins: [
                 new CopyWebpackPlugin([{
-                    from: path.join(getModulePath('openblock-blocks'), 'media'),
+                    from: path.join(getModulePath('hxblock-blocks'), 'media'),
                     to: 'static/blocks-media'
                 }]),
                 new CopyWebpackPlugin([{

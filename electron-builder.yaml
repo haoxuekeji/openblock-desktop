@@ -4,12 +4,12 @@ directories:
 extraResources: ["tools", "external-resources", 'firmwares', "statics", "drivers"]
 
 appId: openblock.cc.openblock-desktop
-productName: "HaoXueBlock Desktop"
+productName: "HXBlock Desktop"
 publish: # empty provider list = don't publish
 
 fileAssociations:
   ext: ob
-  name: HaoXueBlock project file
+  name: HXBlock project file
   role: Editor
   icon: buildResources/OpenBlockFile.ico
 
@@ -25,18 +25,18 @@ mac:
   hardenedRuntime: true
   icon: buildResources/hx-logo.icns
   provisioningProfile: embedded.provisionprofile
-  artifactName: "HaoXueBlock Desktop ${version}.${ext}"
+  artifactName: "HXBlock Desktop ${version}.${ext}"
   target:
     - dmg
     # - mas
 dmg:
-  title: "HaoXueBlock Desktop ${version}"
+  title: "HXBlock Desktop ${version}"
 # mas:
 #   category: public.app-category.education
 #   entitlements: buildResources/entitlements.mas.plist
 #   entitlementsInherit: buildResources/entitlements.mas.inherit.plist
 #   hardenedRuntime: false
-#   icon: buildResources/OpenBlockDesktop.icns
+#   icon: buildResources/HXBlock.icns
 # masDev:
 #   type: development
 #   provisioningProfile: mas-dev.provisionprofile
@@ -47,7 +47,7 @@ win:
     # - appx
     - nsis
 # appx:
-#   identityName: "OpenblockTeam.OpenblockDesktop
+#   identityName: "OpenblockTeam.HXBlock
 #   publisherDisplayName: "OpenBlock Team"
 #   publisher: "CN=2EC43DF1-469A-4119-9AB9-568A0A1FF65F"
 #   artifactName: "OpenBlock ${version}.${ext}"
@@ -56,4 +56,4 @@ nsis:
   allowToChangeInstallationDirectory: true
   include: buildResources/installer.nsh
 #   license: LICENSE
-  artifactName: "HaoXueBlock Desktop ${version} Setup.${ext}"
+  artifactName: "HXBlock Desktop ${version} Setup.${ext}"

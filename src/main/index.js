@@ -1,26 +1,26 @@
-import {BrowserWindow, Menu, app, dialog, ipcMain, systemPreferences} from 'electron';
+import { BrowserWindow, Menu, app, dialog, ipcMain, systemPreferences } from 'electron';
 import fs from 'fs-extra';
 import path from 'path';
-import {URL} from 'url';
-import {promisify} from 'util';
-import {execFile, spawn} from 'child_process';
+import { URL } from 'url';
+import { promisify } from 'util';
+import { execFile, spawn } from 'child_process';
 import os from 'os';
 
 import argv from './argv';
-import {getFilterForExtension} from './FileFilters';
+import { getFilterForExtension } from './FileFilters';
 import telemetry from './ScratchDesktopTelemetry';
 import MacOSMenu from './MacOSMenu';
 import log from '../common/log.js';
-import {productName, version} from '../../package.json';
+import { productName, version } from '../../package.json';
 
-import {v4 as uuidv4} from 'uuid';
-import {JSONStorage} from 'node-localstorage';
+import { v4 as uuidv4 } from 'uuid';
+import { JSONStorage } from 'node-localstorage';
 
 import compareVersions from 'compare-versions';
 import del from 'del';
 
 import formatMessage from 'format-message';
-import locales from 'openblock-l10n/locales/desktop-msgs';
+import locales from 'hxblock-l10n/locales/desktop-msgs';
 import osLocale from 'os-locale';
 
 import OpenBlockLink from 'openblock-link';
@@ -43,7 +43,7 @@ app.allowRendererProcessReuse = true;
 telemetry.appWasOpened();
 
 // const defaultSize = {width: 1096, height: 715}; // minimum
-const defaultSize = {width: 1280, height: 800}; // good for MAS screenshots
+const defaultSize = { width: 1280, height: 800 }; // good for MAS screenshots
 
 const isDevelopment = process.env.NODE_ENV !== 'production';
 
@@ -74,65 +74,65 @@ const displayPermissionDeniedWarning = (browserWindow, permissionType) => {
     let title;
     let message;
     switch (permissionType) {
-    case 'camera':
-        title = formatMessage({
-            id: 'index.cameraPermissionDeniedTitle',
-            default: 'Camera Permission Denied',
-            description: 'prompt for camera permission denied'
-        });
-        message = formatMessage({
-            id: 'index.cameraPermissionDeniedMessage',
-            default: 'Permission to use the camera has been denied. ' +
-                'OpenBlock will not be able to take a photo or use video sensing blocks.',
-            description: 'message for camera permission denied'
-        });
-        break;
-    case 'microphone':
-        title = formatMessage({
-            id: 'index.microphonePermissionDeniedTitle',
-            default: 'Microphone Permission Denied',
-            description: 'prompt for microphone permission denied'
-        });
-        message = formatMessage({
-            id: 'index.microphonePermissionDeniedMessage',
-            default: 'Permission to use the microphone has been denied. ' +
+        case 'camera':
+            title = formatMessage({
+                id: 'index.cameraPermissionDeniedTitle',
+                default: 'Camera Permission Denied',
+                description: 'prompt for camera permission denied'
+            });
+            message = formatMessage({
+                id: 'index.cameraPermissionDeniedMessage',
+                default: 'Permission to use the camera has been denied. ' +
+                    'OpenBlock will not be able to take a photo or use video sensing blocks.',
+                description: 'message for camera permission denied'
+            });
+            break;
+        case 'microphone':
+            title = formatMessage({
+                id: 'index.microphonePermissionDeniedTitle',
+                default: 'Microphone Permission Denied',
+                description: 'prompt for microphone permission denied'
+            });
+            message = formatMessage({
+                id: 'index.microphonePermissionDeniedMessage',
+                default: 'Permission to use the microphone has been denied. ' +
                     'OpenBlock will not be able to record sounds or detect loudness.',
-            description: 'message for microphone permission denied'
-        });
-        break;
-    default: // shouldn't ever happen...
-        title = formatMessage({
-            id: 'index.permissionDeniedTitle',
-            default: 'Permission Denied',
-            description: 'prompt for permission denied'
-        });
-        message = formatMessage({
-            id: 'index.permissionDeniedMessage',
-            default: 'A permission has been denied.',
-            description: 'message for permission denied'
-        });
+                description: 'message for microphone permission denied'
+            });
+            break;
+        default: // shouldn't ever happen...
+            title = formatMessage({
+                id: 'index.permissionDeniedTitle',
+                default: 'Permission Denied',
+                description: 'prompt for permission denied'
+            });
+            message = formatMessage({
+                id: 'index.permissionDeniedMessage',
+                default: 'A permission has been denied.',
+                description: 'message for permission denied'
+            });
     }
 
     let instructions;
     switch (process.platform) {
-    case 'darwin':
-        instructions = formatMessage({
-            id: 'index.darwinPermissionDeniedInstructions',
-            default: 'To change OpenBlock permissions, please check "Security & Privacy" in System Preferences.',
-            description: 'prompt for fix darwin permission denied instructions'
-        });
-        break;
-    default:
-        instructions = formatMessage({
-            id: 'index.permissionDeniedInstructions',
-            default: 'To change OpenBlock permissions, please check your system settings and restart OpenBlock.',
-            description: 'prompt for fix permission denied instructions'
-        });
-        break;
+        case 'darwin':
+            instructions = formatMessage({
+                id: 'index.darwinPermissionDeniedInstructions',
+                default: 'To change OpenBlock permissions, please check "Security & Privacy" in System Preferences.',
+                description: 'prompt for fix darwin permission denied instructions'
+            });
+            break;
+        default:
+            instructions = formatMessage({
+                id: 'index.permissionDeniedInstructions',
+                default: 'To change OpenBlock permissions, please check your system settings and restart OpenBlock.',
+                description: 'prompt for fix permission denied instructions'
+            });
+            break;
     }
     message = `${message}\n\n${instructions}`;
 
-    dialog.showMessageBox(browserWindow, {type: 'warning', title, message});
+    dialog.showMessageBox(browserWindow, { type: 'warning', title, message });
 };
 
 /**
@@ -195,15 +195,15 @@ const handlePermissionRequest = async (webContents, permission, callback, detail
     let askForCamera = false;
     for (const mediaType of details.mediaTypes) {
         switch (mediaType) {
-        case 'audio':
-            askForMicrophone = true;
-            break;
-        case 'video':
-            askForCamera = true;
-            break;
-        default:
-            // deny: unhandled media type
-            return callback(false);
+            case 'audio':
+                askForMicrophone = true;
+                break;
+            case 'video':
+                askForCamera = true;
+                break;
+            default:
+                // deny: unhandled media type
+                return callback(false);
         }
     }
     const parentWindow = _windows.main; // if we ever allow media in non-main windows we'll also need to change this
@@ -224,7 +224,7 @@ const handlePermissionRequest = async (webContents, permission, callback, detail
     return callback(true);
 };
 
-const createWindow = ({search = null, url = 'index.html', ...browserWindowOptions}) => {
+const createWindow = ({ search = null, url = 'index.html', ...browserWindowOptions }) => {
     const window = new BrowserWindow({
         useContentSize: true,
         show: false,
@@ -247,7 +247,7 @@ const createWindow = ({search = null, url = 'index.html', ...browserWindowOption
             !input.isAutoRepeat &&
             !input.isComposing) {
             event.preventDefault();
-            webContents.openDevTools({mode: 'detach', activate: true});
+            webContents.openDevTools({ mode: 'detach', activate: true });
         }
     });
 
@@ -270,8 +270,8 @@ const createAboutWindow = () => {
 
 const getIsProjectSave = downloadItem => {
     switch (downloadItem.getMimeType()) {
-    case 'application/x.scratch.sb3':
-        return true;
+        case 'application/x.scratch.sb3':
+            return true;
     }
     return false;
 };
@@ -313,10 +313,10 @@ const createMainWindow = () => {
                         // The download was canceled or interrupted. Cancel the telemetry event and delete the file.
                         throw new Error(`save ${doneState}`); // "save cancelled" or "save interrupted"
                     }
-                    await fs.move(tempPath, userChosenPath, {overwrite: true});
+                    await fs.move(tempPath, userChosenPath, { overwrite: true });
                     if (isProjectSave) {
                         const newProjectTitle = path.basename(userChosenPath, extName);
-                        webContents.send('setTitleFromSave', {title: newProjectTitle});
+                        webContents.send('setTitleFromSave', { title: newProjectTitle });
 
                         // "setTitleFromSave" will set the project title but GUI has already reported the telemetry
                         // event using the old title. This call lets the telemetry client know that the save was
@@ -399,7 +399,7 @@ const createMainWindow = () => {
         resourceServer.checkUpdate(locale)
             .then(info => {
                 if (info) {
-                    webContents.send('setUpdate', {phase: 'idle', version: info.version, describe: info.describe});
+                    webContents.send('setUpdate', { phase: 'idle', version: info.version, describe: info.describe });
                 }
             })
             .catch(err => {
@@ -412,21 +412,21 @@ const createMainWindow = () => {
         resourceServer.checkUpdate(locale)
             .then(info => {
                 if (info) {
-                    webContents.send('setUpdate', {phase: 'idle', version: info.version, describe: info.describe});
+                    webContents.send('setUpdate', { phase: 'idle', version: info.version, describe: info.describe });
                 } else {
-                    webContents.send('setUpdate', {phase: 'latest'});
+                    webContents.send('setUpdate', { phase: 'latest' });
                 }
             })
             .catch(err => {
                 webContents.send('setUpdate',
-                    {phase: 'error', message: err});
+                    { phase: 'error', message: err });
             });
     });
 
     ipcMain.on('reqeustUpgrade', () => {
         resourceServer.upgrade(state => {
             webContents.send('setUpdate',
-                {phase: state.phase});
+                { phase: state.phase });
         })
             .then(() => {
                 app.relaunch();
@@ -434,7 +434,7 @@ const createMainWindow = () => {
             })
             .catch(err => {
                 webContents.send('setUpdate',
-                    {phase: 'error', message: err});
+                    { phase: 'error', message: err });
             });
     });
 
@@ -491,15 +491,15 @@ if (gotTheLock) {
     app.on('ready', () => {
         if (isDevelopment) {
             import('electron-devtools-installer').then(importedModule => {
-                const {default: installExtension, ...devToolsExtensions} = importedModule;
+                const { default: installExtension, ...devToolsExtensions } = importedModule;
                 const extensionsToInstall = [
                     devToolsExtensions.REACT_DEVELOPER_TOOLS,
                     devToolsExtensions.REACT_PERF,
                     devToolsExtensions.REDUX_DEVTOOLS
                 ];
                 for (const extension of extensionsToInstall) {
-                // WARNING: depending on a lot of things including the version of Electron `installExtension` might
-                // return a promise that never resolves, especially if the extension is already installed.
+                    // WARNING: depending on a lot of things including the version of Electron `installExtension` might
+                    // return a promise that never resolves, especially if the extension is already installed.
                     installExtension(extension).then(
                         extensionName => log(`Installed dev extension: ${extensionName}`),
                         errorMessage => log.error(`Error installing dev extension: ${errorMessage}`)
@@ -529,7 +529,7 @@ if (gotTheLock) {
         if (oldVersion) {
             if (compareVersions.compare(appVersion, oldVersion, '>')) {
                 if (fs.existsSync(dataPath)) {
-                    del.sync([dataPath], {force: true});
+                    del.sync([dataPath], { force: true });
                 }
                 nodeStorage.setItem('version', appVersion);
             }
@@ -555,7 +555,7 @@ if (gotTheLock) {
         resourceServer.listen();
 
         ipcMain.on('clearCache', () => {
-            del.sync(dataPath, {force: true});
+            del.sync(dataPath, { force: true });
             app.relaunch();
             app.exit();
         });
@@ -563,11 +563,11 @@ if (gotTheLock) {
         ipcMain.on('installDriver', () => {
             const driverPath = path.join(resourcePath, 'drivers');
             if ((os.platform() === 'win32') && (os.arch() === 'x64')) {
-                execFile('install_x64.bat', [], {cwd: driverPath});
+                execFile('install_x64.bat', [], { cwd: driverPath });
             } else if ((os.platform() === 'win32') && (os.arch() === 'ia32')) {
-                execFile('install_x86.bat', [], {cwd: driverPath});
+                execFile('install_x86.bat', [], { cwd: driverPath });
             } else if ((os.platform() === 'darwin')) {
-                spawn('sh', ['install.sh'], {shell: true, cwd: driverPath});
+                spawn('sh', ['install.sh'], { shell: true, cwd: driverPath });
             }
         });
 
