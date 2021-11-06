@@ -36,7 +36,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: HXBlock-win-x64.exe
-          path: dist/OpenBlock*Setup.exe
+          path: dist/HXBlock*Setup.exe
           retention-days: 1
 
   build-windows32:
@@ -63,7 +63,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: HXBlock-win-x86.exe
-          path: dist/OpenBlock*Setup.exe
+          path: dist/HXBlock*Setup.exe
           retention-days: 1
 
   build-mac:
@@ -91,7 +91,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: HXBlock-mac.dmg
-          path: dist/OpenBlock*.dmg
+          path: dist/HXBlock*.dmg
           retention-days: 1
 
   create-release:
