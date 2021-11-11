@@ -4,12 +4,12 @@ directories:
 extraResources: ["tools", "external-resources", 'firmwares', "statics", "drivers"]
 
 appId: openblock.cc.openblock-desktop
-productName: "OpenBlock Desktop"
+productName: "HXBlock Desktop"
 publish: # empty provider list = don't publish
 
 fileAssociations:
   ext: ob
-  name: OpenBlock project file
+  name: HXBlock project file
   role: Editor
   icon: buildResources/OpenBlockFile.ico
 
@@ -23,14 +23,14 @@ mac:
         This app requires microphone access when recording sounds or detecting loudness.
   gatekeeperAssess: true
   hardenedRuntime: true
-  icon: buildResources/OpenBlockDesktop.icns
+  icon: buildResources/hx-logo.icns
   provisioningProfile: embedded.provisionprofile
-  artifactName: "OpenBlock Desktop ${version}.${ext}"
+  artifactName: "HXBlock Desktop ${version}.${ext}"
   target:
     - dmg
     # - mas
 dmg:
-  title: "OpenBlock Desktop ${version}"
+  title: "HXBlock Desktop ${version}"
 # mas:
 #   category: public.app-category.education
 #   entitlements: buildResources/entitlements.mas.plist
@@ -42,7 +42,7 @@ dmg:
 #   provisioningProfile: mas-dev.provisionprofile
 
 win:
-  icon: buildResources/OpenBlockDesktop.ico
+  icon: buildResources/hx-logo.ico
   target:
     # - appx
     - nsis
@@ -56,4 +56,4 @@ nsis:
   allowToChangeInstallationDirectory: true
   include: buildResources/installer.nsh
 #   license: LICENSE
-  artifactName: "OpenBlock Desktop ${version} Setup.${ext}"
+  artifactName: "HXBlock Desktop ${version} Setup.${ext}"
