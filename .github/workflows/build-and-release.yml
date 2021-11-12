@@ -146,7 +146,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./HXlockDesktop-win-x64.zip
+          asset_path: ./HXBlockDesktop-win-x64.zip
           asset_name: HXBlockDesktop-${{ steps.package-version.outputs.current-version }}-win-x64.zip
           asset_content_type: application/zip
 
