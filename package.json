@@ -1,5 +1,5 @@
 {
-  "name": "HXBlock-desktop",
+  "name": "hxlock-desktop",
   "productName": "HXBlock Desktop",
   "description": "HXBlock as a self-contained desktop application",
   "author": "haoxuekeji xiaoyingzi",
@@ -80,7 +80,7 @@
     "nets": "^3.2.0",
     "node-localstorage": "^2.1.6",
     "npm-force-resolutions": "0.0.10",
-    "openblock-gui": "git+https://github.com/haoxuekeji/openblock-gui.git#desktop-haoxue",
+    "openblock-gui": "github:haoxuekeji/openblock-gui.git#desktop-haoxue",
     "hxblock-l10n": "^3.10.0",
     "os-locale": "^5.0.0",
     "react": "^16.14.0",
