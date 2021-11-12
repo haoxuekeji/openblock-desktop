@@ -2,7 +2,7 @@ const {notarize} = require('electron-notarize');
 
 const notarizeMacBuild = async function (context) {
     // keep this in sync with appId in the electron-builder config
-    const appId = 'edu.mit.scratch.scratch-desktop';
+    const appId = 'haoxuekeji.com.hxblock-desktop';
 
     if (!process.env.AC_USERNAME) {
         console.error([

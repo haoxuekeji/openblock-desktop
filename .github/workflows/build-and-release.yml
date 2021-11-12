@@ -35,7 +35,7 @@ jobs:
       - name: Archive production artifacts
         uses: actions/upload-artifact@v2
         with:
-          name: HXBlock-win-x64.exe
+          name: HXBlockDesktop-win-x64.exe
           path: dist/HXBlock*Setup.exe
           retention-days: 1
 
@@ -62,7 +62,7 @@ jobs:
       - name: Archive production artifacts
         uses: actions/upload-artifact@v2
         with:
-          name: HXBlock-win-x86.exe
+          name: HXBlockDesktop-win-x86.exe
           path: dist/HXBlock*Setup.exe
           retention-days: 1
 
@@ -90,7 +90,7 @@ jobs:
       - name: Archive production artifacts
         uses: actions/upload-artifact@v2
         with:
-          name: HXBlock-mac.dmg
+          name: HXBlockDesktop-mac.dmg
           path: dist/HXBlock*.dmg
           retention-days: 1
 
@@ -137,8 +137,8 @@ jobs:
       - name: Zip win x64 file
         uses: papeloto/action-zip@v1
         with:
-            files: HXBlock-win-x64.exe
-            dest: HXBlock-win-x64.zip
+            files: HXBlockDesktop-win-x64.exe
+            dest: HXBlockDesktop-win-x64.zip
 
       - name: Relase Windows x64 package
         uses: actions/upload-release-asset@v1
@@ -146,16 +146,16 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./HXBlock-win-x64.zip
-          asset_name: HXBlock-${{ steps.package-version.outputs.current-version }}-win-x64.zip
+          asset_path: ./HXlockDesktop-win-x64.zip
+          asset_name: HXBlockDesktop-${{ steps.package-version.outputs.current-version }}-win-x64.zip
           asset_content_type: application/zip
 
       # Windows x86 Release
       - name: Zip win x86 file
         uses: papeloto/action-zip@v1
         with:
-            files: HXBlock-win-x86.exe
-            dest: HXBlock-win-x86.zip
+            files: HXBlockDesktop-win-x86.exe
+            dest: HXBlockDesktop-win-x86.zip
 
       - name: Relase Windows x64 package
         uses: actions/upload-release-asset@v1
@@ -163,16 +163,16 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./HXBlock-win-x86.zip
-          asset_name: HXBlock-${{ steps.package-version.outputs.current-version }}-win-x86.zip
+          asset_path: ./HXBlockDesktop-win-x86.zip
+          asset_name: HXBlockDesktop-${{ steps.package-version.outputs.current-version }}-win-x86.zip
           asset_content_type: application/zip
 
       # Mac Release
       - name: Zip mac file
         uses: papeloto/action-zip@v1
         with:
-            files: HXBlock-mac.dmg
-            dest: HXBlock-mac.zip
+            files: HXBlockDesktop-mac.dmg
+            dest: HXBlockDesktop-mac.zip
 
       - name: Relase Mac package
         uses: actions/upload-release-asset@v1
@@ -180,13 +180,13 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./HXBlock-mac.zip
-          asset_name: HXBlock-${{ steps.package-version.outputs.current-version }}-mac.zip
+          asset_path: ./HXBlockDesktop-mac.zip
+          asset_name: HXBlockDesktop-${{ steps.package-version.outputs.current-version }}-mac.zip
           asset_content_type: application/zip
 
       # Checksum Release
       - name: Checksum
-        run: sha256sum HXBlock-*.zip >> checksums.txt
+        run: sha256sum HXBlockDesktop-*.zip >> checksums.txt
 
       - uses: actions/upload-release-asset@v1
         env:

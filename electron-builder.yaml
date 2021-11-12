@@ -1,60 +1,59 @@
 directories:
-    buildResources: buildResources
-    output: dist
-extraResources:
-    ["tools", "external-resources", "firmwares", "statics", "drivers"]
+  buildResources: buildResources
+  output: dist
+extraResources: ["tools", "external-resources", 'firmwares', "statics", "drivers"]
 
 appId: haoxuekeji.com.hxblock-desktop
 productName: "HXBlock Desktop"
 publish: # empty provider list = don't publish
 
 fileAssociations:
-    ext: ob
-    name: HXBlock project file
-    role: Editor
-    icon: buildResources/OpenBlockFile.ico
+  ext: ob
+  name: HXBlock project file
+  role: Editor
+  icon: buildResources/OpenBlockFile.ico
 
 mac:
-    category: public.app-category.education
-    entitlements: buildResources/entitlements.mac.plist
-    extendInfo:
-        NSCameraUsageDescription: >-
-            This app requires camera access when taking a photo in the paint editor or using the video sensing blocks.
-        NSMicrophoneUsageDescription: >-
-            This app requires microphone access when recording sounds or detecting loudness.
-    gatekeeperAssess: true
-    hardenedRuntime: true
-    icon: buildResources/hx-logo.icns
-    provisioningProfile: embedded.provisionprofile
-    artifactName: "HXBlock Desktop ${version}.${ext}"
-    target:
-        - dmg
-        # - mas
+  category: public.app-category.education
+  entitlements: buildResources/entitlements.mac.plist
+  extendInfo:
+    NSCameraUsageDescription: >-
+        This app requires camera access when taking a photo in the paint editor or using the video sensing blocks.
+    NSMicrophoneUsageDescription: >-
+        This app requires microphone access when recording sounds or detecting loudness.
+  gatekeeperAssess: true
+  hardenedRuntime: true
+  icon: buildResources/hx-logo.icns
+  provisioningProfile: embedded.provisionprofile
+  artifactName: "HXBlock Desktop ${version}.${ext}"
+  target:
+    - dmg
+    # - mas
 dmg:
-    title: "HXBlock Desktop ${version}"
+  title: "HXBlock Desktop ${version}"
 # mas:
 #   category: public.app-category.education
 #   entitlements: buildResources/entitlements.mas.plist
 #   entitlementsInherit: buildResources/entitlements.mas.inherit.plist
 #   hardenedRuntime: false
-#   icon: buildResources/HXBlock.icns
+#   icon: buildResources/OpenBlockDesktop.icns
 # masDev:
 #   type: development
 #   provisioningProfile: mas-dev.provisionprofile
 
 win:
-    icon: buildResources/hx-logo.ico
-    target:
-        # - appx
-        - nsis
+  icon: buildResources/hx-logo.ico
+  target:
+    # - appx
+    - nsis
 # appx:
-#   identityName: "OpenblockTeam.HXBlock
+#   identityName: "OpenblockTeam.OpenblockDesktop
 #   publisherDisplayName: "OpenBlock Team"
 #   publisher: "CN=2EC43DF1-469A-4119-9AB9-568A0A1FF65F"
 #   artifactName: "OpenBlock ${version}.${ext}"
 nsis:
-    oneClick: false # allow user to choose per-user or per-machine
-    allowToChangeInstallationDirectory: true
-    include: buildResources/installer.nsh
-    #   license: LICENSE
-    artifactName: "HXBlock Desktop ${version} Setup.${ext}"
+  oneClick: false # allow user to choose per-user or per-machine
+  allowToChangeInstallationDirectory: true
+  include: buildResources/installer.nsh
+#   license: LICENSE
+  artifactName: "HXBlock Desktop ${version} Setup.${ext}"
