@@ -13,23 +13,6 @@ Visit the wiki: [https://openblockcc.github.io/wiki/main](https://openblockcc.gi
 
 Visit the wiki on gitee (mirror): [https://openblockcc.gitee.io/wiki/main](https://openblockcc.gitee.io/wiki/main)
 
-## Join chat
-
-- Gitter: [https://gitter.im/openblockcc/community](https://gitter.im/openblockcc/community?utm_source=share-link&utm_medium=link&utm_campaign=share-link)
-
-- QQ 群 (for chinese): 933484739
-
-## Donate
-
-Buy me a cup of coffee.
-
-- Ko-fi (PayPal):
-
-    [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/X8X66DATO)
-
-- 支付宝:
-
-    ![alipayQRCode](./doc/alipayQRCode.png)
 
 ## Bug Report
 

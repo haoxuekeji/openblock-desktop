@@ -135,7 +135,7 @@ jobs:
 
       # Windows x64 Release
       - name: Zip win x64 file
-        uses: papeloto/action-zip@v1
+        uses: vimtor/action-zip@v1
         with:
             files: HXBlockDesktop-win-x64.exe
             dest: HXBlockDesktop-win-x64.zip
@@ -152,7 +152,7 @@ jobs:
 
       # Windows x86 Release
       - name: Zip win x86 file
-        uses: papeloto/action-zip@v1
+        uses: vimtor/action-zip@v1
         with:
             files: HXBlockDesktop-win-x86.exe
             dest: HXBlockDesktop-win-x86.zip
@@ -169,7 +169,7 @@ jobs:
 
       # Mac Release
       - name: Zip mac file
-        uses: papeloto/action-zip@v1
+        uses: vimtor/action-zip@v1
         with:
             files: HXBlockDesktop-mac.dmg
             dest: HXBlockDesktop-mac.zip
