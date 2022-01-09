@@ -3,7 +3,7 @@
   "productName": "HXBlock Desktop",
   "description": "HXBlock as a self-contained desktop application",
   "author": "haoxuekeji xiaoyingzi",
-  "version": "2.2.9",
+  "version": "2.2.10",
   "license": "MIT",
   "scripts": {
     "preinstall": "npx npm-force-resolutions",

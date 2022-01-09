@@ -259,6 +259,7 @@ const createWindow = ({search = null, url = 'index.html', ...browserWindowOption
 
 const createAboutWindow = () => {
     const window = createWindow({
+        icon: path.join(__dirname, './icon/hx-logo.ico'),
         width: 400,
         height: 400,
         parent: _windows.main,
@@ -278,6 +279,7 @@ const getIsProjectSave = downloadItem => {
 
 const createMainWindow = () => {
     const window = createWindow({
+        icon: path.join(__dirname, './icon/hx-logo.ico'),
         width: defaultSize.width,
         height: defaultSize.height,
         title: `${productName} ${version}` // something like "Scratch 3.14"
