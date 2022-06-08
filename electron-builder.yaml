@@ -1,11 +1,12 @@
 directories:
   buildResources: buildResources
   output: dist
-extraResources: ["tools", "external-resources", 'firmwares', "statics", "drivers"]
+extraFiles: ['LICENSE', 'LICENSE.ScratchFoundation', 'TRADEMARK', "tools", "external-resources", 'firmwares', "drivers"]
 
 appId: haoxuekeji.com.hxblock-desktop
 productName: "HXBlock Desktop"
-publish: # empty provider list = don't publish
+publish:
+  - provider: github
 
 fileAssociations:
   ext: ob
@@ -18,19 +19,19 @@ mac:
   entitlements: buildResources/entitlements.mac.plist
   extendInfo:
     NSCameraUsageDescription: >-
-        This app requires camera access when taking a photo in the paint editor or using the video sensing blocks.
+        This app requires camera access when using the video sensing blocks.
     NSMicrophoneUsageDescription: >-
         This app requires microphone access when recording sounds or detecting loudness.
   gatekeeperAssess: true
   hardenedRuntime: true
   icon: buildResources/hx-logo.icns
   provisioningProfile: embedded.provisionprofile
-  artifactName: "HXBlock Desktop ${version}.${ext}"
+  artifactName: "HXBlock-Desktop_${version}.${ext}"
   target:
     - dmg
     # - mas
 dmg:
-  title: "HXBlock Desktop ${version}"
+  title: "HXBlock-Desktop_${version}"
 # mas:
 #   category: public.app-category.education
 #   entitlements: buildResources/entitlements.mas.plist
@@ -56,4 +57,4 @@ nsis:
   allowToChangeInstallationDirectory: true
   include: buildResources/installer.nsh
 #   license: LICENSE
-  artifactName: "HXBlock Desktop ${version} Setup.${ext}"
+  artifactName: "HXBlock-Desktop_${version}.${ext}"

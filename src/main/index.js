@@ -1,24 +1,21 @@
-import {BrowserWindow, Menu, app, dialog, ipcMain, systemPreferences} from 'electron';
+import {BrowserWindow, Menu, app, dialog, ipcMain, shell, systemPreferences} from 'electron';
+import * as remote from '@electron/remote/main';
 import fs from 'fs-extra';
 import path from 'path';
 import {URL} from 'url';
 import {promisify} from 'util';
-import {execFile, spawn} from 'child_process';
-import os from 'os';
 
 import argv from './argv';
 import {getFilterForExtension} from './FileFilters';
-import telemetry from './ScratchDesktopTelemetry';
+import telemetry from './OpenblockDesktopTelemetry';
+import Updater from './OpenblockDesktopUpdater';
+import DesktopLink from './OpenblockDesktopLink.js';
 import MacOSMenu from './MacOSMenu';
 import log from '../common/log.js';
 import {productName, version} from '../../package.json';
 
 import {v4 as uuidv4} from 'uuid';
-import {JSONStorage} from 'node-localstorage';
-
-import compareVersions from 'compare-versions';
-import del from 'del';
-
+import ElectronStore from 'electron-store';
 import formatMessage from 'format-message';
 import locales from 'hxblock-l10n/locales/desktop-msgs';
 import osLocale from 'os-locale';
@@ -26,19 +23,16 @@ import osLocale from 'os-locale';
 import OpenBlockLink from 'openblock-link';
 import OpenblockResourceServer from 'openblock-resource';
 
-let resourceServer;
+const storage = new ElectronStore();
+const desktopLink = new DesktopLink();
 
-const nodeStorage = new JSONStorage(app.getPath('userData'));
-
-let locale = osLocale.sync();
-if (locale === 'zh-CN') {
-    locale = 'zh-cn';
-} else if (locale === 'zh-TW') {
-    locale = 'zh-tw';
-}
+formatMessage.setup({translations: locales});
 
 // suppress deprecation warning; this will be the default in Electron 9
 app.allowRendererProcessReuse = true;
+
+// allow connect to localhost
+app.commandLine.appendSwitch('allow-insecure-localhost', 'true');
 
 telemetry.appWasOpened();
 
@@ -229,6 +223,7 @@ const createWindow = ({search = null, url = 'index.html', ...browserWindowOption
         useContentSize: true,
         show: false,
         webPreferences: {
+            contextIsolation: false,
             nodeIntegration: true
         },
         ...browserWindowOptions
@@ -251,8 +246,16 @@ const createWindow = ({search = null, url = 'index.html', ...browserWindowOption
         }
     });
 
+    webContents.on('new-window', (event, newWindowUrl) => {
+        shell.openExternal(newWindowUrl);
+        event.preventDefault();
+    });
+
     const fullUrl = makeFullUrl(url, search);
     window.loadURL(fullUrl);
+    window.once('ready-to-show', () => {
+        webContents.send('ready-to-show');
+    });
 
     return window;
 };
@@ -269,9 +272,39 @@ const createAboutWindow = () => {
     return window;
 };
 
+const createPrivacyWindow = () => {
+    const window = createWindow({
+        width: _windows.main.width * 0.8,
+        height: _windows.main.height * 0.8,
+        parent: _windows.main,
+        search: 'route=privacy',
+        title: `${productName} Privacy Policy`
+    });
+    return window;
+};
+
+const createLoadingWindow = () => {
+    const window = createWindow({
+        width: 800,
+        height: 150,
+        frame: false,
+        resizable: false,
+        transparent: true,
+        hasShadow: false,
+        search: 'route=loading',
+        title: `Loding ${productName} ${version}`
+    });
+
+    window.once('ready-to-show', () => {
+        window.show();
+    });
+
+    return window;
+};
+
 const getIsProjectSave = downloadItem => {
     switch (downloadItem.getMimeType()) {
-    case 'application/x.scratch.sb3':
+    case 'application/x.openblock.ob':
         return true;
     }
     return false;
@@ -285,6 +318,10 @@ const createMainWindow = () => {
         title: `${productName} ${version}` // something like "Scratch 3.14"
     });
     const webContents = window.webContents;
+
+    const update = new Updater(webContents, desktopLink.resourceServer);
+    remote.initialize();
+    remote.enable(webContents);
 
     webContents.session.on('will-download', (willDownloadEvent, downloadItem) => {
         const isProjectSave = getIsProjectSave(downloadItem);
@@ -332,6 +369,11 @@ const createMainWindow = () => {
                     // don't clean up until after the message box to allow troubleshooting / recovery
                     await dialog.showMessageBox(window, {
                         type: 'error',
+                        title: formatMessage({
+                            id: 'index.saveFailedTitle',
+                            default: 'Failed to save project',
+                            description: 'Title for save failed'
+                        }),
                         message: `${formatMessage({
                             id: 'index.saveFailed',
                             default: 'Save failed:',
@@ -356,6 +398,7 @@ const createMainWindow = () => {
 
     webContents.on('will-prevent-unload', ev => {
         const choice = dialog.showMessageBoxSync(window, {
+            title: productName,
             type: 'question',
             message: formatMessage({
                 id: 'index.questionLeave',
@@ -387,57 +430,38 @@ const createMainWindow = () => {
         }
     });
 
-    window.once('ready-to-show', () => {
-        window.show();
-    });
-
     ipcMain.on('loading-completed', () => {
-        // Retrieve the userid value, and if it's not there, assign it a new uuid.
-        const userId = nodeStorage.getItem('userId') || uuidv4();
-        // (re)save the userid, so it persists for the next app session.
-        nodeStorage.setItem('userId', userId);
+        if (!storage.has('userId')) {
+            storage.set('userId', uuidv4());
+        }
+        const userId = storage.get('userId');
         webContents.send('setUserId', userId);
 
-        resourceServer.checkUpdate(locale)
-            .then(info => {
-                if (info) {
-                    webContents.send('setUpdate', {phase: 'idle', version: info.version, describe: info.describe});
-                }
-            })
-            .catch(err => {
-                console.warn(`Error while checking for update: ${err}`);
-            });
-
         webContents.send('setPlatform', process.platform);
+
+        update.checkUpdateAtStartup();
     });
+
     ipcMain.on('reqeustCheckUpdate', () => {
-        resourceServer.checkUpdate(locale)
-            .then(info => {
-                if (info) {
-                    webContents.send('setUpdate', {phase: 'idle', version: info.version, describe: info.describe});
-                } else {
-                    webContents.send('setUpdate', {phase: 'latest'});
-                }
+        update.reqeustCheckUpdate();
+    });
+
+    ipcMain.on('reqeustUpdate', () => {
+        update.reqeustUpdate()
+            .then(() => {
+                setTimeout(() => {
+                    console.log(`INFO: App will restart after 3 seconds`);
+                    app.relaunch();
+                    app.exit();
+                }, 1000 * 3);
             })
             .catch(err => {
-                webContents.send('setUpdate',
-                    {phase: 'error', message: err});
+                console.error(`ERR!: update failed: ${err}`);
             });
     });
 
-    ipcMain.on('reqeustUpgrade', () => {
-        resourceServer.upgrade(state => {
-            webContents.send('setUpdate',
-                {phase: state.phase});
-        })
-            .then(() => {
-                app.relaunch();
-                app.exit();
-            })
-            .catch(err => {
-                webContents.send('setUpdate',
-                    {phase: 'error', message: err});
-            });
+    ipcMain.on('abortUpdate', () => {
+        update.abortUpdate();
     });
 
     return window;
@@ -478,118 +502,95 @@ if (process.platform === 'win32') {
     }
 }
 
-const gotTheLock = app.requestSingleInstanceLock();
-if (gotTheLock) {
-    app.on('second-instance', () => {
-        // Someone tried to run a second instance, we should focus our window.
-        if (_windows) {
-            if (_windows.main.isMinimized()) _windows.main.restore();
-            _windows.main.focus();
-            _windows.main.show();
-        }
+// create main BrowserWindow when electron is ready
+app.on('ready', () => {
+    if (isDevelopment) {
+        import('electron-devtools-installer').then(importedModule => {
+            const {default: installExtension, ...devToolsExtensions} = importedModule;
+            const extensionsToInstall = [
+                devToolsExtensions.REACT_DEVELOPER_TOOLS,
+                devToolsExtensions.REACT_PERF,
+                devToolsExtensions.REDUX_DEVTOOLS
+            ];
+            for (const extension of extensionsToInstall) {
+                // WARNING: depending on a lot of things including the version of Electron `installExtension` might
+                // return a promise that never resolves, especially if the extension is already installed.
+                installExtension(extension).then(
+                    extensionName => log(`Installed dev extension: ${extensionName}`),
+                    errorMessage => log.error(`Error installing dev extension: ${errorMessage}`)
+                );
+            }
+        });
+    }
+
+    _windows.main = createMainWindow();
+    _windows.main.on('closed', () => {
+        delete _windows.main;
+    });
+    _windows.about = createAboutWindow();
+    _windows.about.on('close', event => {
+        event.preventDefault();
+        _windows.about.hide();
+    });
+    _windows.privacy = createPrivacyWindow();
+    _windows.privacy.on('close', event => {
+        event.preventDefault();
+        _windows.privacy.hide();
     });
 
-    // create main BrowserWindow when electron is ready
-    app.on('ready', () => {
-        if (isDevelopment) {
-            import('electron-devtools-installer').then(importedModule => {
-                const {default: installExtension, ...devToolsExtensions} = importedModule;
-                const extensionsToInstall = [
-                    devToolsExtensions.REACT_DEVELOPER_TOOLS,
-                    devToolsExtensions.REACT_PERF,
-                    devToolsExtensions.REDUX_DEVTOOLS
-                ];
-                for (const extension of extensionsToInstall) {
-                    // WARNING: depending on a lot of things including the version of Electron `installExtension` might
-                    // return a promise that never resolves, especially if the extension is already installed.
-                    installExtension(extension).then(
-                        extensionName => log(`Installed dev extension: ${extensionName}`),
-                        errorMessage => log.error(`Error installing dev extension: ${errorMessage}`)
-                    );
-                }
+    ipcMain.on('clearCache', () => {
+        desktopLink.clearCache();
+    });
+
+    ipcMain.on('installDriver', () => {
+        desktopLink.installDriver();
+    });
+
+    // create a loading windows let user know the app is starting
+    _windows.loading = createLoadingWindow();
+    _windows.loading.once('show', () => {
+        desktopLink.updateCahce();
+        desktopLink.start()
+            .then(() => {
+                // after finsh load progress show main window and close loading window
+                _windows.main.show();
+                _windows.loading.close();
+                delete _windows.loading;
+            })
+            .catch(async e => {
+            // TODO: report error via telemetry
+                await dialog.showMessageBox(_windows.loading, {
+                    type: 'error',
+                    title: formatMessage({
+                        id: 'index.initialResourcesFailedTitle',
+                        default: 'Failed to initialize resources',
+                        description: 'Title for initialize resources failed'
+                    }),
+                    message: `${formatMessage({
+                        id: 'index.initializeResourcesFailed',
+                        default: 'Initialize resources failed',
+                        description: 'prompt for initialize resources failed'
+                    })}`,
+                    detail: e
+                });
+
+                app.exit();
             });
-        }
-
-        formatMessage.setup({
-            locale: locale,
-            // eslint-disable-next-line global-require
-            translations: locales
-        });
-
-        const userDataPath = app.getPath(
-            'userData'
-        );
-        const dataPath = path.join(userDataPath, 'Data');
-
-        const appPath = app.getAppPath();
-
-        const appVersion = app.getVersion();
-
-        // if current version is newer then cache log, delet the data cache dir and write the
-        // new version into the cache file.
-        const oldVersion = nodeStorage.getItem('version');
-        if (oldVersion) {
-            if (compareVersions.compare(appVersion, oldVersion, '>')) {
-                if (fs.existsSync(dataPath)) {
-                    del.sync([dataPath], {force: true});
-                }
-                nodeStorage.setItem('version', appVersion);
-            }
-        } else {
-            nodeStorage.setItem('version', appVersion);
-        }
-
-        let resourcePath;
-        if (appPath.search(/app/g) !== -1) {
-            resourcePath = path.join(appPath, '../');
-        } else if (appPath.search(/main/g) !== -1) { // eslint-disable-line no-negated-condition
-            resourcePath = path.join(appPath, '../../');
-        } else {
-            resourcePath = path.join(appPath);
-        }
-
-        // start link server
-        const link = new OpenBlockLink(dataPath, path.join(resourcePath, 'tools'));
-        link.listen();
-
-        // start resource server
-        resourceServer = new OpenblockResourceServer(dataPath, path.join(resourcePath, 'external-resources'));
-        resourceServer.listen();
-
-        ipcMain.on('clearCache', () => {
-            del.sync(dataPath, {force: true});
-            app.relaunch();
-            app.exit();
-        });
-
-        ipcMain.on('installDriver', () => {
-            const driverPath = path.join(resourcePath, 'drivers');
-            if ((os.platform() === 'win32') && (os.arch() === 'x64')) {
-                execFile('install_x64.bat', [], {cwd: driverPath});
-            } else if ((os.platform() === 'win32') && (os.arch() === 'ia32')) {
-                execFile('install_x86.bat', [], {cwd: driverPath});
-            } else if ((os.platform() === 'darwin')) {
-                spawn('sh', ['install.sh'], {shell: true, cwd: driverPath});
-            }
-        });
-
-        _windows.main = createMainWindow();
-        _windows.main.on('closed', () => {
-            delete _windows.main;
-        });
-        _windows.about = createAboutWindow();
-        _windows.about.on('close', event => {
-            event.preventDefault();
-            _windows.about.hide();
-        });
     });
-} else {
-    app.quit();
-}
+});
 
 ipcMain.on('open-about-window', () => {
     _windows.about.show();
 });
+
+ipcMain.on('open-privacy-policy-window', () => {
+    _windows.privacy.show();
+});
+
+ipcMain.on('set-locale', (event, arg) => {
+    formatMessage.setup({locale: arg});
+});
+
 
 // start loading initial project data before the GUI needs it so the load seems faster
 const initialProjectDataPromise = (async () => {

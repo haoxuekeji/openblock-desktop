@@ -46,7 +46,7 @@ const getPlatformFlag = function () {
  */
 const runBuilder = function (wrapperConfig, target) {
     // the AppX build fails if CSC_* or WIN_CSC_* variables are set
-    const shouldStripCSC = (target.name === 'appx') || (!wrapperConfig.doSign);
+    const shouldStripCSC = (target.name.indexOf('appx') === 0) || (!wrapperConfig.doSign);
     const childEnvironment = shouldStripCSC ? stripCSC(process.env) : process.env;
     if (wrapperConfig.doSign &&
         (target.name.indexOf('nsis') === 0) &&
@@ -67,11 +67,17 @@ const runBuilder = function (wrapperConfig, target) {
             allArgs.push('--c.mac.identity=null');
         }
     }
+    if (target.platform === 'win32' && wrapperConfig.mode !== 'dev') {
+        allArgs.push('--ia32', '--x64');
+    }
     if (!wrapperConfig.doPackage) {
         allArgs.push('--dir', '--c.compression=store');
     }
-    if (wrapperConfig.arch === 'ia32') {
-        allArgs.push('--ia32');
+    if (wrapperConfig.doPublish) {
+        allArgs.push('--publish', 'always');
+    } else {
+        // Prevent electron build from automatically publishing in github action
+        allArgs.push('--publish', 'never');
     }
     allArgs = allArgs.concat(wrapperConfig.builderArgs);
     console.log(`running electron-builder with arguments: ${allArgs}`);
@@ -113,7 +119,7 @@ const calculateTargets = function (wrapperConfig) {
             platform: 'darwin'
         },
         // microsoftStore: {
-        //     name: 'appx',
+        //     name: 'appx:ia32 appx:x64',
         //     platform: 'win32'
         // },
         windowsDirectDownload: {
@@ -173,26 +179,38 @@ const parseArgs = function () {
 
     let doPackage;
     let doSign;
+    let doPublish;
 
     switch (mode) {
     case 'dev':
         doPackage = true;
         doSign = false;
+        doPublish = false;
         break;
     case 'dir':
         doPackage = false;
         doSign = false;
+        doPublish = false;
         break;
     case 'dist':
         doPackage = true;
         // doSign = true; // skip code signing before getting a certificate
         doSign = false;
+        doPublish = false;
+        break;
+    case 'publish':
+        doPackage = true;
+        // doSign = true; // skip code signing before getting a certificate
+        doSign = false;
+        doPublish = true;
+        break;
     }
 
     return {
         builderArgs,
         doPackage, // false = build to directory
         doSign,
+        doPublish,
         mode,
         arch
     };
