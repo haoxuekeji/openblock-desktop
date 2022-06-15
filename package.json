@@ -1,8 +1,8 @@
 {
-  "name": "hxlock-desktop",
+  "name": "hxblock-desktop",
   "productName": "HXBlock Desktop",
   "description": "HXBlock as a self-contained desktop application",
-  "author": "haoxuekeji xiaoyingzi",
+  "author": "haoxuekeji",
   "version": "2.3.1",
   "license": "MIT",
   "scripts": {
@@ -13,7 +13,7 @@
     "start": "mkdirp ./dist && electron-webpack dev --bail --display-error-details --env.minify=false --no-progress",
     "compile": "mkdirp ./dist && electron-webpack --bail --display-error-details --env.minify=false --no-progress",
     "fetch:drivers": "rimraf ./drivers && node scripts/download-driver.js",
-    "fetch:exts": "rimraf ./external-resources && node ./node_modules/openblock-resource/script/download.js  --repo=openblockcc/external-resources-v2",
+    "fetch:exts": "rimraf ./external-resources && node ./node_modules/openblock-resource/script/download.js  --repo=haoxuekeji/external-resources",
     "fetch:firmwares": "rimraf ./firmwares && node ./node_modules/openblock-link/script/download-firmwares.js",
     "fetch:tools": "rimraf ./tools && node ./node_modules/openblock-link/script/download-tools.js",
     "fetch:static": "rimraf ./static && mkdirp ./static && git clone https://github.com/openblockcc/openblock-assets.git static && rimraf ./static/.git",
@@ -35,9 +35,10 @@
     "url": "git+ssh://git@github.com/haoxuekeji/openblock-desktop.git"
   },
   "dependencies": {
-    "openblock-link": "git+https://github.com/haoxuekeji/openblock-link.git",
-    "openblock-resource": "git+https://github.com/haoxuekeji/openblock-resource.git",
     "bytes": "^3.1.2",
+    "css-loader": "^1.0.1",
+    "openblock-link": "git+https://github.com/haoxuekeji/openblock-link.git#main-haoxue",
+    "openblock-resource": "git+https://github.com/haoxuekeji/openblock-resource.git#main-haoxue",
     "postinstall": "^0.7.4",
     "source-map-support": "^0.5.19"
   },
@@ -81,11 +82,10 @@
     "mkdirp": "^1.0.4",
     "monaco-editor-webpack-plugin": "^1.7.0",
     "nets": "^3.2.0",
-    "npm-force-resolutions": "0.0.10",
-    "openblock-gui": "github:haoxuekeji/openblock-gui.git#desktop-haoxue",
-    "hxblock-l10n": "latest",
     "node-abort-controller": "^3.0.1",
     "node-fetch": "^3.2.1",
+    "openblock-gui": "github:haoxuekeji/openblock-gui.git#desktop-haoxue",
+    "hxblock-l10n": "latest",
     "openblock-parse-release-message": "0.0.4",
     "os-locale": "^5.0.0",
     "react": "^16.14.0",

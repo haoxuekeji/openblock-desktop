@@ -26,7 +26,7 @@ import {
 } from 'openblock-gui/src/reducers/modals';
 import {setUpdate} from 'openblock-gui/src/reducers/update';
 
-import analytics, {initialAnalytics} from 'openblock-gui/src/lib/analytics';
+//import analytics, {initialAnalytics} from 'openblock-gui/src/lib/analytics';
 import MessageBoxType from 'openblock-gui/src/lib/message-box.js';
 
 import ElectronStorageHelper from '../common/ElectronStorageHelper';
@@ -92,9 +92,9 @@ const ScratchDesktopGUIHOC = function (WrappedComponent) {
                 this.props.onSetUpdate(args);
             });
             ipcRenderer.on('setUserId', (event, args) => {
-                initialAnalytics(args);
+                //initialAnalytics(args);
                 // Register "base" page view
-                analytics.pageview('/', null, 'desktop');
+                //analytics.pageview('/', null, 'desktop');
             });
             ipcRenderer.on('setPlatform', (event, args) => {
                 this.platform = args;

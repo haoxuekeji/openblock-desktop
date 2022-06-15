@@ -78,7 +78,7 @@ jobs:
           DO_SECRET_KEY: ${{ secrets.DO_SECRET_KEY }}
           NODE_ENV: production
           NODE_OPTIONS: --max_old_space_size=4096
-        run: npm run publish
+        run: npm run build:dist
 
   build-mac:
     needs: create-release
@@ -103,4 +103,4 @@ jobs:
           NODE_ENV: production
           NODE_OPTIONS: --max_old_space_size=8192
           CSC_IDENTITY_AUTO_DISCOVERY: false
-        run: npm run publish
+        run: npm run build:dist

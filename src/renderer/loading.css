@@ -2,7 +2,7 @@ html, body {
     background-color: transparent;
 }
 
-.loadingBox {
+.loading-box {
     margin: 0;
     position: absolute;
     top: 50%;
@@ -12,6 +12,6 @@ html, body {
     height: 100%;
 }
 
-.loadingLogo {
+.loading-logo {
     max-width: 50rem;
 }
