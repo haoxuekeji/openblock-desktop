@@ -21,8 +21,7 @@ jobs:
           node-version: '14.x'
 
       - name: Npm Install
-        run: |
-          npm ci
+        run: install
 
       - name: Build Dist
         env:
@@ -49,7 +48,7 @@ jobs:
           node-version: '14.x'
 
       - name: Npm Install
-        run: npm ci
+        run: npm install
 
       - name: Build Dist
         env:

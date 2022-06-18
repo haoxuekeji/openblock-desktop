@@ -67,8 +67,7 @@ jobs:
           node-version: '14.x'
 
       - name: Npm Install
-        run: |
-          npm ci
+        run: npm install
 
       - name: Build and Publish
         env:
@@ -90,7 +89,7 @@ jobs:
           node-version: '14.x'
 
       - name: Npm Install
-        run: npm ci
+        run: npm install
 
       - name: Build and Publish
         env:
