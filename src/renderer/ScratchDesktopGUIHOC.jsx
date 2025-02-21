@@ -32,6 +32,7 @@ import MessageBoxType from 'openblock-gui/src/lib/message-box.js';
 import ElectronStorageHelper from '../common/ElectronStorageHelper';
 
 import showPrivacyPolicy from './showPrivacyPolicy';
+import logo from '../icon/hx-logo.svg';
 
 /**
  * Higher-order component to add desktop logic to the GUI.
@@ -208,6 +209,7 @@ const ScratchDesktopGUIHOC = function (WrappedComponent) {
                 onShowPrivacyPolicy={showPrivacyPolicy}
                 onStorageInit={this.handleStorageInit}
                 onUpdateProjectTitle={this.handleUpdateProjectTitle}
+                logo={logo}
 
                 // allow passed-in props to override any of the above
                 {...childProps}

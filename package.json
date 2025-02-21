@@ -23,6 +23,8 @@
     "build:dir": "npm run compile && npm run doBuild -- --mode=dir",
     "build:dist": "npm run compile && npm run doBuild -- --mode=dist",
     "build:publish": "npm run compile && npm run doBuild -- --mode=publish",
+    "build:win": "npm run compile && electron-builder --win --config",
+
     "upload:releaseInfo": "node ./scripts/upload-release-info.mjs",
     "doBuild": "node ./scripts/electron-builder-wrapper.js",
     "dist": "npm run clean && npm run compile && npm run fetch:all && npm run doBuild -- --mode=dist",
