@@ -21,6 +21,7 @@ npm-*
 
 # don't store the assets downloaded with the `fetch` script
 /static
+/statics
 
 # Temporary resource
 /external-resources
