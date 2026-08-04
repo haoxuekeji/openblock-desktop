@@ -84,17 +84,16 @@ class OpenblockDesktopLink {
     start () {
         this._link.listen();
 
-        // start resource server
-        return this._resourceServer.initializeResources()
-            .then(() => {
-                this._resourceServer.listen();
-                return Promise.resolve();
-            })
-            .catch(e => {
-                // Delet error cache dir and exit
-                this.clearCache(false);
-                return Promise.reject(e);
-            });
+        // Newer openblock-resource serves the builtin resources directly and
+        // no longer exposes initializeResources().
+        try {
+            this._resourceServer.listen();
+            return Promise.resolve();
+        } catch (e) {
+            // Delete error cache dir and exit
+            this.clearCache(false);
+            return Promise.reject(e);
+        }
     }
 }
 

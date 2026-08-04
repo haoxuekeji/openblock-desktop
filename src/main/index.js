@@ -33,8 +33,158 @@ app.allowRendererProcessReuse = true;
 
 // allow connect to localhost
 app.commandLine.appendSwitch('allow-insecure-localhost', 'true');
+// Help Chromium expose Web Bluetooth to the renderer (desktop BLE devices).
+app.commandLine.appendSwitch('enable-experimental-web-platform-features');
+app.commandLine.appendSwitch('enable-features', 'WebBluetooth,WebBluetoothNewPermissionsBackend');
 
 telemetry.appWasOpened();
+
+// Web Bluetooth device picker state (Electron has no built-in chooser UI).
+let selectBluetoothCallback = null;
+let bluetoothDialogOpen = false;
+let bluetoothPromptTimer = null;
+let bluetoothScanTimer = null;
+const knownBluetoothDevices = new Map();
+
+const clearBluetoothSelectionState = () => {
+    if (bluetoothPromptTimer) {
+        clearTimeout(bluetoothPromptTimer);
+        bluetoothPromptTimer = null;
+    }
+    if (bluetoothScanTimer) {
+        clearTimeout(bluetoothScanTimer);
+        bluetoothScanTimer = null;
+    }
+    knownBluetoothDevices.clear();
+    bluetoothDialogOpen = false;
+};
+
+const cancelBluetoothRequest = () => {
+    const callback = selectBluetoothCallback;
+    selectBluetoothCallback = null;
+    clearBluetoothSelectionState();
+    if (callback) {
+        callback('');
+    }
+};
+
+const promptBluetoothDevice = async parentWindow => {
+    if (bluetoothDialogOpen || !selectBluetoothCallback || !parentWindow) {
+        return;
+    }
+    const devices = Array.from(knownBluetoothDevices.values());
+    if (devices.length === 0) {
+        return;
+    }
+
+    // Native dialogs only support a handful of buttons; keep the list short.
+    const shown = devices.slice(0, 6);
+    const buttons = shown.map(device => device.deviceName || `未命名 (${String(device.deviceId).slice(0, 8)})`);
+    buttons.push('取消');
+
+    bluetoothDialogOpen = true;
+    let response = buttons.length - 1;
+    try {
+        const result = await dialog.showMessageBox(parentWindow, {
+            type: 'question',
+            title: '选择蓝牙设备',
+            message: '选择要连接的 BLE 设备（无线通讯）',
+            detail: shown.length < devices.length ?
+                `已发现 ${devices.length} 台，仅显示前 ${shown.length} 台。` :
+                `已发现 ${devices.length} 台设备。`,
+            buttons,
+            cancelId: buttons.length - 1,
+            defaultId: 0,
+            noLink: true
+        });
+        response = result.response;
+    } catch (e) {
+        log.error('Bluetooth device dialog failed:', e);
+        response = buttons.length - 1;
+    }
+    bluetoothDialogOpen = false;
+
+    if (!selectBluetoothCallback) {
+        clearBluetoothSelectionState();
+        return;
+    }
+    if (response === buttons.length - 1) {
+        cancelBluetoothRequest();
+        return;
+    }
+    const chosen = shown[response];
+    const callback = selectBluetoothCallback;
+    selectBluetoothCallback = null;
+    clearBluetoothSelectionState();
+    if (callback && chosen) {
+        callback(chosen.deviceId);
+    } else if (callback) {
+        callback('');
+    }
+};
+
+const attachBluetoothDeviceChooser = (window, webContents) => {
+    webContents.on('select-bluetooth-device', (event, deviceList, callback) => {
+        event.preventDefault();
+        selectBluetoothCallback = callback;
+
+        for (const device of deviceList) {
+            knownBluetoothDevices.set(device.deviceId, device);
+        }
+
+        if (!bluetoothDialogOpen && knownBluetoothDevices.size > 0) {
+            if (bluetoothPromptTimer) {
+                clearTimeout(bluetoothPromptTimer);
+            }
+            // Debounce so a few nearby devices can accumulate before the dialog.
+            bluetoothPromptTimer = setTimeout(() => {
+                promptBluetoothDevice(window);
+            }, 1000);
+        }
+
+        if (bluetoothScanTimer) {
+            clearTimeout(bluetoothScanTimer);
+        }
+        bluetoothScanTimer = setTimeout(() => {
+            if (!selectBluetoothCallback || bluetoothDialogOpen) {
+                return;
+            }
+            if (knownBluetoothDevices.size > 0) {
+                promptBluetoothDevice(window);
+            } else {
+                cancelBluetoothRequest();
+            }
+        }, 15000);
+    });
+
+    webContents.session.setBluetoothPairingHandler((details, callback) => {
+        if (details.pairingKind === 'confirm') {
+            callback({confirmed: true});
+            return;
+        }
+        if (details.pairingKind === 'confirmPin') {
+            dialog.showMessageBox(window, {
+                type: 'question',
+                title: '蓝牙配对',
+                message: `确认配对 PIN：${details.pin || ''}`,
+                buttons: ['确认', '取消'],
+                cancelId: 1,
+                defaultId: 0
+            }).then(({response}) => {
+                callback({confirmed: response === 0});
+            }).catch(() => {
+                callback({confirmed: false});
+            });
+            return;
+        }
+        if (details.pairingKind === 'providePin') {
+            // Rare for our ESP32 UART BLE profile; reject rather than invent a PIN UI.
+            callback({confirmed: false});
+            return;
+        }
+        callback({confirmed: false});
+    });
+};
 
 // const defaultSize = {width: 1096, height: 715}; // minimum
 const defaultSize = {width: 1280, height: 800}; // good for MAS screenshots
@@ -176,6 +326,9 @@ const handlePermissionRequest = async (webContents, permission, callback, detail
         // deny: request came from a subframe of the main window, not the main frame
         return callback(false);
     }
+    if (permission === 'bluetooth' || permission === 'bluetoothDevices') {
+        return callback(true);
+    }
     if (permission !== 'media') {
         // deny: request is for some other kind of access like notifications or pointerLock
         return callback(false);
@@ -231,6 +384,15 @@ const createWindow = ({search = null, url = 'index.html', ...browserWindowOption
     const webContents = window.webContents;
 
     webContents.session.setPermissionRequestHandler(handlePermissionRequest);
+    webContents.session.setPermissionCheckHandler((contents, permission) => {
+        if (contents !== webContents) {
+            return false;
+        }
+        return permission === 'bluetooth' ||
+            permission === 'bluetoothDevices' ||
+            permission === 'media';
+    });
+    attachBluetoothDeviceChooser(window, webContents);
 
     webContents.on('before-input-event', (event, input) => {
         if (input.code === devToolKey.code &&

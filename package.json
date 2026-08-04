@@ -13,7 +13,7 @@
     "start": "mkdirp ./dist && electron-webpack dev --bail --display-error-details --env.minify=false --no-progress",
     "compile": "mkdirp ./dist && electron-webpack --bail --display-error-details --env.minify=false --no-progress",
     "fetch:drivers": "rimraf ./drivers && node scripts/download-driver.js",
-    "fetch:exts": "rimraf ./external-resources && node ./node_modules/openblock-resource/script/download.js  --repo=haoxuekeji/external-resources",
+    "fetch:exts": "node scripts/sync-local-resources.js",
     "fetch:firmwares": "rimraf ./firmwares && node ./node_modules/openblock-link/script/download-firmwares.js",
     "fetch:tools": "rimraf ./tools && node ./node_modules/openblock-link/script/download-tools.js",
     "fetch:static": "rimraf ./static && mkdirp ./static && git clone https://github.com/openblockcc/openblock-assets.git static && rimraf ./static/.git",
@@ -23,6 +23,12 @@
     "build:dir": "npm run compile && npm run doBuild -- --mode=dir",
     "build:dist": "npm run compile && npm run doBuild -- --mode=dist",
     "build:publish": "npm run compile && npm run doBuild -- --mode=publish",
+    "build:win": "npm run compile && CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --win nsis --x64 --config",
+    "build:mac": "npm run compile && CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --mac dmg --config -c.mac.identity=null",
+    "build:linux": "npm run compile && CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --linux AppImage deb dir --config",
+    "build:linux:dir": "npm run compile && CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --linux dir --config -c.compression=store",
+    "rebuild": "electron-rebuild --platform=win32 --arch=x64",
+    "setup:linux-tools": "bash scripts/setup-linux-tools.sh",
     "upload:releaseInfo": "node ./scripts/upload-release-info.mjs",
     "doBuild": "node ./scripts/electron-builder-wrapper.js",
     "dist": "npm run clean && npm run compile && npm run fetch:all && npm run doBuild -- --mode=dist",
@@ -58,7 +64,7 @@
     "compare-versions": "^3.6.0",
     "copy-webpack-plugin": "^5.1.1",
     "download-github-release": "^0.3.2",
-    "electron": "^15.3.1",
+    "electron": "^22.3.27",
     "electron-builder": "^22.13.1",
     "electron-devtools-installer": "^3.2.0",
     "electron-fetch": "^1.7.4",
@@ -95,6 +101,19 @@
     "redux": "3.7.2",
     "rimraf": "^3.0.2",
     "uuid": "^8.3.2",
-    "webpack": "^4.43.0"
+    "webpack": "^4.43.0",
+    "electron-rebuild": "^3.2.7"
+  },
+  "main": "main.js",
+  "electronWebpack": {
+    "main": {
+      "sourceDirectory": "src/main",
+      "webpackConfig": "webpack.main.js"
+    },
+    "renderer": {
+      "sourceDirectory": "src/renderer",
+      "template": "src/renderer/index.html",
+      "webpackConfig": "webpack.renderer.js"
+    }
   }
 }

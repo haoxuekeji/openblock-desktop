@@ -1,6 +1,9 @@
 directories:
   buildResources: buildResources
   output: dist
+# Native modules are prebuilt / electron-rebuild'd for the target Electron;
+# skip the slow (and often hanging) npm rebuild during packaging.
+npmRebuild: false
 extraFiles: ['LICENSE', 'LICENSE.ScratchFoundation', 'TRADEMARK', "tools", "external-resources", 'firmwares', "drivers"]
 
 appId: haoxuekeji.com.hxblock-desktop
@@ -57,4 +60,29 @@ nsis:
   allowToChangeInstallationDirectory: true
   include: buildResources/installer.nsh
 #   license: LICENSE
+  artifactName: "HXBlock-Desktop_${version}.${ext}"
+
+linux:
+  category: Education
+  icon: buildResources/hx-logo.png
+  artifactName: "HXBlock-Desktop_${version}.${ext}"
+  desktop:
+    Name: HXBlock Desktop
+    Comment: HXBlock graphical programming for kids
+    Categories: Education;Development;
+  target:
+    - AppImage
+    - deb
+    - dir
+deb:
+  depends:
+    - libgtk-3-0
+    - libnotify4
+    - libnss3
+    - libxss1
+    - libxtst6
+    - xdg-utils
+    - libatspi2.0-0
+    - libuuid1
+appImage:
   artifactName: "HXBlock-Desktop_${version}.${ext}"

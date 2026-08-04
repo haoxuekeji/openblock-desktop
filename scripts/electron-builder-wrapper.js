@@ -125,6 +125,18 @@ const calculateTargets = function (wrapperConfig) {
         windowsDirectDownload: {
             name: 'nsis',
             platform: 'win32'
+        },
+        linuxAppImage: {
+            name: 'AppImage',
+            platform: 'linux'
+        },
+        linuxDeb: {
+            name: 'deb',
+            platform: 'linux'
+        },
+        linuxDir: {
+            name: 'dir',
+            platform: 'linux'
         }
     };
     const targets = [];
@@ -152,6 +164,14 @@ const calculateTargets = function (wrapperConfig) {
             console.log(`skipping target "${availableTargets.macAppStore.name}" because code-signing is disabled`);
         }
         targets.push(availableTargets.macDirectDownload);
+        break;
+    case 'linux':
+        // Unpacked dir is always useful for local smoke tests; AppImage/deb for distribution.
+        targets.push(availableTargets.linuxDir);
+        if (wrapperConfig.doPackage) {
+            targets.push(availableTargets.linuxAppImage);
+            targets.push(availableTargets.linuxDeb);
+        }
         break;
     default:
         throw new Error(`Could not determine targets for platform: ${process.platform}`);

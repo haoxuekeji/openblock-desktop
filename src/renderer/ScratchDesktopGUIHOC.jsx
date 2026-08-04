@@ -25,13 +25,20 @@ import {
     openUpdateModal
 } from 'openblock-gui/src/reducers/modals';
 import {setUpdate} from 'openblock-gui/src/reducers/update';
+import {setSession} from 'openblock-gui/src/reducers/session';
 
-//import analytics, {initialAnalytics} from 'openblock-gui/src/lib/analytics';
 import MessageBoxType from 'openblock-gui/src/lib/message-box.js';
 
 import ElectronStorageHelper from '../common/ElectronStorageHelper';
 
 import showPrivacyPolicy from './showPrivacyPolicy';
+
+const getPlatformHost = () => {
+    if (typeof window !== 'undefined' && window.OpenBlockPlatformHost) {
+        return String(window.OpenBlockPlatformHost).replace(/\/$/, '');
+    }
+    return 'https://www.haoxuekeji.com';
+};
 
 /**
  * Higher-order component to add desktop logic to the GUI.
@@ -47,8 +54,12 @@ const ScratchDesktopGUIHOC = function (WrappedComponent) {
                 'handleSetTitleFromSave',
                 'handleShowMessageBox',
                 'handleStorageInit',
-                'handleUpdateProjectTitle'
+                'handleUpdateProjectTitle',
+                'handleLogIn',
+                'handleLogOut',
+                'restoreSessionFromToken'
             ]);
+            this.platformHost = getPlatformHost();
             this.props.onLoadingStarted();
             ipcRenderer.invoke('get-initial-project-data').then(initialProjectData => {
                 const hasInitialProject = initialProjectData && (initialProjectData.length > 0);
@@ -75,11 +86,7 @@ const ScratchDesktopGUIHOC = function (WrappedComponent) {
                             detail: e.message
                         });
 
-                        // this effectively sets the default project ID
-                        // TODO: maybe setting the default project ID should be implicit in `requestNewProject`
                         this.props.onHasInitialProject(false, this.props.loadingState);
-
-                        // restart as if we didn't have an initial project to load
                         this.props.onRequestNewProject();
                     }
                 );
@@ -91,17 +98,50 @@ const ScratchDesktopGUIHOC = function (WrappedComponent) {
             ipcRenderer.on('setUpdate', (event, args) => {
                 this.props.onSetUpdate(args);
             });
-            ipcRenderer.on('setUserId', (event, args) => {
-                //initialAnalytics(args);
-                // Register "base" page view
-                //analytics.pageview('/', null, 'desktop');
-            });
+            ipcRenderer.on('setUserId', () => {});
             ipcRenderer.on('setPlatform', (event, args) => {
                 this.platform = args;
             });
+            // Expose setSession the same way the web playground does, so
+            // login handlers and future embedding code can update the session.
+            if (typeof window !== 'undefined') {
+                window.setSession = this.props.onSetSession;
+            }
+            this.restoreSessionFromToken();
         }
         componentWillUnmount () {
             ipcRenderer.removeListener('setTitleFromSave', this.handleSetTitleFromSave);
+        }
+        restoreSessionFromToken () {
+            let token = '';
+            try {
+                token = window.localStorage.getItem('token') || '';
+            } catch (e) {
+                token = '';
+            }
+            if (!token) return;
+
+            fetch(`${this.platformHost}/api/v1/users/me`, {
+                headers: {Authorization: `Bearer ${token}`}
+            })
+                .then(res => (res.ok ? res.json() : Promise.reject(res.status)))
+                .then(user => {
+                    this.props.onSetSession({
+                        session: {
+                            user: {
+                                userid: user.id,
+                                username: user.username || '',
+                                thumbnailUrl: user.avatar_url || '',
+                                token: token
+                            }
+                        }
+                    });
+                })
+                .catch(() => {
+                    try {
+                        window.localStorage.removeItem('token');
+                    } catch (e) { /* ignore */ }
+                });
         }
         handleClickAbout () {
             ipcRenderer.send('open-about-window');
@@ -128,10 +168,83 @@ const ScratchDesktopGUIHOC = function (WrappedComponent) {
             this.handleUpdateProjectTitle(args.title);
         }
         handleStorageInit (storageInstance) {
+            // Local costume/sound assets shipped with the app.
             storageInstance.addHelper(new ElectronStorageHelper(storageInstance));
+            // Cloud project create/update against the platform API.
+            storageInstance.addOfficialScratchWebStores();
+            storageInstance.setProjectHost(`${this.platformHost}/api/v1/scratch/project`);
+            storageInstance.setAssetHost(this.platformHost);
         }
         handleUpdateProjectTitle (newTitle) {
             this.setState({projectTitle: newTitle});
+        }
+        /**
+         * LoginDropdown calls onLogIn(form, onClose, callback).
+         * Accept both the 3-arg form and the 2-arg web playground form.
+         */
+        handleLogIn (form, onClose, callback) {
+            const done = typeof callback === 'function' ? callback :
+                (typeof onClose === 'function' ? onClose : () => {});
+            const close = typeof callback === 'function' ? onClose : null;
+
+            if (!form || !form.username || !form.password) {
+                done({success: false, message: '缺少用户名或密码'});
+                return;
+            }
+
+            fetch(`${this.platformHost}/api/v1/auth/login`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    username: form.username,
+                    password: form.password
+                })
+            })
+                .then(res => (res.ok ? res.json() :
+                    res.json().then(err => Promise.reject(err))))
+                .then(data => {
+                    if (!(data && data.access_token)) {
+                        done({success: false, message: '登录失败'});
+                        return;
+                    }
+                    const profile = data.user || {};
+                    try {
+                        window.localStorage.setItem('token', data.access_token);
+                    } catch (e) { /* ignore */ }
+                    this.props.onSetSession({
+                        session: {
+                            user: {
+                                userid: profile.id || 0,
+                                username: profile.username || form.username,
+                                thumbnailUrl: profile.avatar_url || '',
+                                token: data.access_token
+                            }
+                        }
+                    });
+                    done({success: true, access_token: data.access_token});
+                    if (typeof close === 'function') close();
+                })
+                .catch(err => {
+                    done({
+                        success: false,
+                        message: (err && (err.detail || err.message)) || '网络错误'
+                    });
+                });
+        }
+        handleLogOut () {
+            try {
+                window.localStorage.removeItem('token');
+            } catch (e) { /* ignore */ }
+            this.props.onSetSession({
+                session: {
+                    user: {
+                        userid: 0,
+                        username: '',
+                        thumbnailUrl: '',
+                        token: ''
+                    }
+                }
+            });
         }
         handleShowMessageBox (type, message) {
             /**
@@ -165,13 +278,30 @@ const ScratchDesktopGUIHOC = function (WrappedComponent) {
         }
         render () {
             const childProps = omit(this.props, Object.keys(ScratchDesktopGUIComponent.propTypes));
+            const loggedIn = Boolean(this.props.username);
+            const cloudHost = `${this.platformHost.replace(/^https?:\/\//, '')}/api/v1/scratch/cloud` +
+                (this.props.token ? `?token=${encodeURIComponent(this.props.token)}` : '');
 
             return (<WrappedComponent
                 canEditTitle
-                canModifyCloudData={false}
-                canSave={false}
+                // Desktop loads from file:// (or asar); absolute /scratch3/ media
+                // paths break block icons (green flag, wait, forever, ...).
+                basePath="./"
+                // Only offer cloud create/copy once logged in; otherwise the
+                // saver HOC auto-POSTs a new project and pops "无法创建作品".
+                canCreateNew={loggedIn}
+                canCreateCopy={loggedIn}
+                canManageFiles
+                canModifyCloudData={loggedIn}
+                canSave={loggedIn}
+                hasCloudPermission={loggedIn}
                 isScratchDesktop
-                onClickAbout={[ // 新方法？似乎gui里已经有接口了
+                projectHost={`${this.platformHost}/api/v1/scratch/project`}
+                backpackHost={`${this.platformHost}/api/v1/scratch/backpack`}
+                cloudHost={cloudHost}
+                renderLogin={this.handleLogIn}
+                onLogOut={this.handleLogOut}
+                onClickAbout={[
                     {
                         title: (<FormattedMessage
                             defaultMessage="About"
@@ -224,16 +354,22 @@ const ScratchDesktopGUIHOC = function (WrappedComponent) {
         onLoadingCompleted: PropTypes.func,
         onLoadingStarted: PropTypes.func,
         onRequestNewProject: PropTypes.func,
+        onSetSession: PropTypes.func,
         onTelemetrySettingsClicked: PropTypes.func,
         onSetUpdate: PropTypes.func,
+        token: PropTypes.string,
+        username: PropTypes.string,
         // using PropTypes.instanceOf(VM) here will cause prop type warnings due to VM mismatch
         vm: GUIComponent.WrappedComponent.propTypes.vm
     };
     const mapStateToProps = state => {
         const loadingState = state.scratchGui.projectState.loadingState;
+        const user = state.session && state.session.session && state.session.session.user;
         return {
             loadingState: loadingState,
             locale: state.locales.locale,
+            username: user ? user.username : '',
+            token: user ? user.token : '',
             vm: state.scratchGui.vm
         };
     };
@@ -242,21 +378,21 @@ const ScratchDesktopGUIHOC = function (WrappedComponent) {
         onLoadingCompleted: () => dispatch(closeLoadingProject()),
         onHasInitialProject: (hasInitialProject, loadingState) => {
             if (hasInitialProject) {
-                // emulate sb-file-uploader
                 return dispatch(requestProjectUpload(loadingState));
             }
-
-            // `createProject()` might seem more appropriate but it's not a valid state transition here
-            // setting the default project ID is a valid transition from NOT_LOADED and acts like "create new"
             return dispatch(setProjectId(defaultProjectId));
         },
         onFetchedInitialProjectData: (projectData, loadingState) =>
             dispatch(onFetchedProjectData(projectData, loadingState)),
         onLoadedProject: (loadingState, loadSuccess) => {
+            // Only mark the project as cloud-saveable after a successful login;
+            // otherwise the first load tries to POST /scratch/project and pops
+            // "Unable to create project".
             const canSaveToServer = false;
             return dispatch(onLoadedProject(loadingState, canSaveToServer, loadSuccess));
         },
         onRequestNewProject: () => dispatch(requestNewProject(false)),
+        onSetSession: session => dispatch(setSession(session)),
         onSetUpdate: arg => {
             dispatch(setUpdate(arg));
             dispatch(openUpdateModal());
