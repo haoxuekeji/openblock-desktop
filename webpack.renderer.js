@@ -34,7 +34,10 @@ module.exports = defaultConfig =>
                 /node_modules[\\/]+openblock-[^\\/]+[\\/]+src/,
                 /node_modules[\\/]+hxblock-[^\\/]+[\\/]+src/,
                 /node_modules[\\/]+pify/,
-                /node_modules[\\/]+@vernier[\\/]+godirect/
+                /node_modules[\\/]+@vernier[\\/]+godirect/,
+                // xterm 5.x ships ES2021 syntax which the webpack 4 parser
+                // can not read, run it through babel first (same as GUI web build).
+                /node_modules[\\/]+@xterm[\\/]+/
             ].filter(Boolean),
             plugins: [
                 new CopyWebpackPlugin([{

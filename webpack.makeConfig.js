@@ -27,7 +27,12 @@ const makeConfig = function (defaultConfig, options) {
         plugins: [
             '@babel/plugin-syntax-dynamic-import',
             '@babel/plugin-transform-async-to-generator',
-            '@babel/plugin-proposal-object-rest-spread'
+            '@babel/plugin-proposal-object-rest-spread',
+            // Electron 22 supports ?. / ?? natively so preset-env keeps them,
+            // but webpack 4's parser can not read them (e.g. @xterm 5.x).
+            // Force the transforms so bundled output stays webpack4-parsable.
+            '@babel/plugin-transform-optional-chaining',
+            '@babel/plugin-transform-nullish-coalescing-operator'
         ],
         presets: [
             ['@babel/preset-env', {targets: {electron: electronVersion}}]
