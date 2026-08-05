@@ -21,8 +21,6 @@
  * 注意：openblock-gui 指向 desktop worktree（desktop-haoxue 分支），
  * --check 会核对该 worktree 的当前分支。
  */
-'use strict';
-
 const {execFileSync} = require('child_process');
 const fs = require('fs');
 const path = require('path');
@@ -59,10 +57,13 @@ for (const {pkg, repo, expectBranch} of LINKS) {
     let head = 'unknown';
     let dirty = false;
     let branch = '';
+    const gitOut = args => execFileSync('git', ['-C', target].concat(args))
+        .toString()
+        .trim();
     try {
-        head = execFileSync('git', ['-C', target, 'rev-parse', 'HEAD']).toString().trim();
-        dirty = execFileSync('git', ['-C', target, 'status', '--short']).toString().trim().length > 0;
-        branch = execFileSync('git', ['-C', target, 'branch', '--show-current']).toString().trim();
+        head = gitOut(['rev-parse', 'HEAD']);
+        dirty = gitOut(['status', '--short']).length > 0;
+        branch = gitOut(['branch', '--show-current']);
     } catch (e) {
         fail(`读取 ${repo} git 状态失败: ${e.message}`);
     }
@@ -89,13 +90,13 @@ for (const {pkg, repo, expectBranch} of LINKS) {
         continue;
     }
 
-    if (!linkOk) {
+    if (linkOk) {
+        log(`${pkg}: 链接已就绪 -> ${state}`);
+    } else {
         fs.rmSync(linkPath, {recursive: true, force: true});
         fs.mkdirSync(path.dirname(linkPath), {recursive: true});
         fs.symlinkSync(path.relative(path.dirname(linkPath), target), linkPath, 'dir');
         log(`${pkg}: 已链接 -> ${state}`);
-    } else {
-        log(`${pkg}: 链接已就绪 -> ${state}`);
     }
 }
 
