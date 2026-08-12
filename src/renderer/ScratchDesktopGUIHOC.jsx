@@ -29,6 +29,7 @@ import {setSession} from 'openblock-gui/src/reducers/session';
 
 import MessageBoxType from 'openblock-gui/src/lib/message-box.js';
 
+import log from '../common/log.js';
 import ElectronStorageHelper from '../common/ElectronStorageHelper';
 
 import showPrivacyPolicy from './showPrivacyPolicy';
@@ -55,6 +56,7 @@ const ScratchDesktopGUIHOC = function (WrappedComponent) {
                 'handleShowMessageBox',
                 'handleStorageInit',
                 'handleUpdateProjectTitle',
+                'handleUpdateProjectThumbnail',
                 'handleLogIn',
                 'handleLogOut',
                 'restoreSessionFromToken'
@@ -177,6 +179,28 @@ const ScratchDesktopGUIHOC = function (WrappedComponent) {
         }
         handleUpdateProjectTitle (newTitle) {
             this.setState({projectTitle: newTitle});
+        }
+        /**
+         * Upload the stage snapshot as the project cover after each save, so
+         * the platform "my works" list shows an up-to-date thumbnail.
+         * @param {string} projectId - platform project id
+         * @param {Blob} blob - PNG snapshot of the stage
+         */
+        handleUpdateProjectThumbnail (projectId, blob) {
+            let token = '';
+            try {
+                token = window.localStorage.getItem('token') || '';
+            } catch (e) {
+                token = '';
+            }
+            if (!token) return;
+            fetch(`${this.platformHost}/api/v1/scratch/project/thumbnail/${projectId}`, {
+                method: 'POST',
+                headers: {Authorization: `Bearer ${token}`},
+                body: blob
+            }).catch(err => {
+                log.error('Could not upload project thumbnail', err);
+            });
         }
         /**
          * LoginDropdown calls onLogIn(form, onClose, callback).
@@ -338,6 +362,7 @@ const ScratchDesktopGUIHOC = function (WrappedComponent) {
                 onShowPrivacyPolicy={showPrivacyPolicy}
                 onStorageInit={this.handleStorageInit}
                 onUpdateProjectTitle={this.handleUpdateProjectTitle}
+                onUpdateProjectThumbnail={this.handleUpdateProjectThumbnail}
 
                 // allow passed-in props to override any of the above
                 {...childProps}

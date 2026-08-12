@@ -53,7 +53,17 @@
             helpButton: { show: true }
         },
         shareButton: { show: false },
-        profileButton: { show: false },
+        // "My works" browser: lists the logged-in user's platform projects
+        // (window.scratch.openMyWorks is registered by the GUI container).
+        profileButton: {
+            show: true,
+            buttonName: '我的作品',
+            handleClick: function () {
+                if (window.scratch && window.scratch.openMyWorks) {
+                    window.scratch.openMyWorks();
+                }
+            }
+        },
         guideButton: { show: false },
         handleVmInitialized: function (vm) {
             window.vm = vm;
@@ -63,8 +73,10 @@
         handleProjectIdChange: function () {},
         handleUpdateProjectTitle: function () {},
         mobilePlayer: false,
-        // Keep local asset CDN for costumes/sounds bundled with the app.
-        assetCDN: location.origin,
+        // Platform-hosted user assets (custom costumes/sounds of cloud
+        // projects). Bundled library assets still resolve locally first via
+        // ElectronStorageHelper, which has higher store priority.
+        assetCDN: PLATFORM_HOST,
         projectHost: PLATFORM_HOST + '/api/v1/scratch/project',
         backpackHost: PLATFORM_HOST + '/api/v1/scratch/backpack',
         // Enable the Sign-in menu; ScratchDesktopGUIHOC wires the actual login.

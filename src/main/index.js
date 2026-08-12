@@ -1,4 +1,4 @@
-import {BrowserWindow, Menu, app, dialog, ipcMain, shell, systemPreferences} from 'electron';
+import {BrowserWindow, Menu, app, dialog, ipcMain, session, shell, systemPreferences} from 'electron';
 import * as remote from '@electron/remote/main';
 import fs from 'fs-extra';
 import path from 'path';
@@ -664,8 +664,43 @@ if (process.platform === 'win32') {
     }
 }
 
+// ── Platform API CORS adapter ──────────────────────────────────────────
+// The renderer runs on file:// (serialized origin "null"), which the
+// platform backend's CORS allow list rejects, so login / my-works / save
+// requests would all fail the preflight. Rewrite the Origin header on the
+// way out so the backend treats the request as same-site, then pin the
+// response allow-origin back to "null" (valid for both plain and
+// credentialed requests) so Chromium accepts it.
+// Keep the host in sync with PLATFORM_HOST in src/renderer/index.html.
+const PLATFORM_ORIGIN = process.env.OPENBLOCK_PLATFORM_HOST || 'https://www.haoxuekeji.com';
+const setupPlatformCors = () => {
+    const filter = {urls: [`${PLATFORM_ORIGIN}/*`]};
+    session.defaultSession.webRequest.onBeforeSendHeaders(filter, (details, callback) => {
+        const requestHeaders = {};
+        for (const key of Object.keys(details.requestHeaders)) {
+            if (key.toLowerCase() !== 'origin') {
+                requestHeaders[key] = details.requestHeaders[key];
+            }
+        }
+        requestHeaders.Origin = PLATFORM_ORIGIN;
+        callback({requestHeaders});
+    });
+    session.defaultSession.webRequest.onHeadersReceived(filter, (details, callback) => {
+        const responseHeaders = {};
+        for (const key of Object.keys(details.responseHeaders || {})) {
+            if (!(/^access-control-allow-(origin|credentials)$/i).test(key)) {
+                responseHeaders[key] = details.responseHeaders[key];
+            }
+        }
+        responseHeaders['Access-Control-Allow-Origin'] = ['null'];
+        responseHeaders['Access-Control-Allow-Credentials'] = ['true'];
+        callback({responseHeaders});
+    });
+};
+
 // create main BrowserWindow when electron is ready
 app.on('ready', () => {
+    setupPlatformCors();
     if (isDevelopment) {
         import('electron-devtools-installer').then(importedModule => {
             const {default: installExtension, ...devToolsExtensions} = importedModule;
