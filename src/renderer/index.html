@@ -64,7 +64,18 @@
                 }
             }
         },
-        guideButton: { show: false },
+        // Local standard-python runner (window.scratch.openPythonRunner is
+        // registered by the GUI container; execution goes through the
+        // embedded Link service).
+        guideButton: {
+            show: true,
+            buttonName: 'Python',
+            handleClick: function () {
+                if (window.scratch && window.scratch.openPythonRunner) {
+                    window.scratch.openPythonRunner();
+                }
+            }
+        },
         handleVmInitialized: function (vm) {
             window.vm = vm;
         },
