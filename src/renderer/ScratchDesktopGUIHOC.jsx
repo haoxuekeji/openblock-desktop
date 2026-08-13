@@ -38,7 +38,7 @@ const getPlatformHost = () => {
     if (typeof window !== 'undefined' && window.OpenBlockPlatformHost) {
         return String(window.OpenBlockPlatformHost).replace(/\/$/, '');
     }
-    return 'https://www.haoxuekeji.com';
+    return 'https://learn.haoxuekeji.com';
 };
 
 /**

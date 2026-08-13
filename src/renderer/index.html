@@ -30,7 +30,9 @@
 <script>
     // Platform API base. Override at runtime by editing this file, or by
     // setting window.OpenBlockPlatformHost before the GUI boots.
-    var PLATFORM_HOST = 'https://www.haoxuekeji.com';
+    // Note: www.haoxuekeji.com serves the marketing site only; the learn
+    // subdomain hosts the platform SPA and its /api/v1 backend.
+    var PLATFORM_HOST = 'https://learn.haoxuekeji.com';
 
     window.OpenBlockPlatformHost = PLATFORM_HOST;
     // Prefer the embedded Link resource server on desktop.
@@ -64,15 +66,21 @@
                 }
             }
         },
-        // Local standard-python runner (window.scratch.openPythonRunner is
-        // registered by the GUI container; execution goes through the
-        // embedded Link service).
+        // Python entry: preferred experience is the platform playground in
+        // a dedicated window (Monaco editor, examples, cloud sandbox and
+        // local execution through Link). When the platform page cannot be
+        // loaded the main process signals back and we fall back to the
+        // built-in local runner modal (window.scratch.openPythonRunner).
         guideButton: {
             show: true,
             buttonName: 'Python',
             handleClick: function () {
-                if (window.scratch && window.scratch.openPythonRunner) {
-                    window.scratch.openPythonRunner();
+                try {
+                    window.require('electron').ipcRenderer.send('open-python-playground-window');
+                } catch (e) {
+                    if (window.scratch && window.scratch.openPythonRunner) {
+                        window.scratch.openPythonRunner();
+                    }
                 }
             }
         },
@@ -97,6 +105,19 @@
         arduino: true,
         canSave: true
     };
+
+    // The main process destroys the playground window and emits this event
+    // when the platform page cannot be reached; use the offline-capable
+    // local runner modal instead.
+    try {
+        window.require('electron').ipcRenderer.on('python-playground-unavailable', function () {
+            if (window.scratch && window.scratch.openPythonRunner) {
+                window.scratch.openPythonRunner();
+            }
+        });
+    } catch (e) {
+        // not running inside electron; nothing to wire up
+    }
 </script>
 
 </html>

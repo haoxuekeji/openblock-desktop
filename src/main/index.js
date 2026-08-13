@@ -672,7 +672,7 @@ if (process.platform === 'win32') {
 // response allow-origin back to "null" (valid for both plain and
 // credentialed requests) so Chromium accepts it.
 // Keep the host in sync with PLATFORM_HOST in src/renderer/index.html.
-const PLATFORM_ORIGIN = process.env.OPENBLOCK_PLATFORM_HOST || 'https://www.haoxuekeji.com';
+const PLATFORM_ORIGIN = process.env.OPENBLOCK_PLATFORM_HOST || 'https://learn.haoxuekeji.com';
 const setupPlatformCors = () => {
     const filter = {urls: [`${PLATFORM_ORIGIN}/*`]};
     session.defaultSession.webRequest.onBeforeSendHeaders(filter, (details, callback) => {
@@ -697,6 +697,69 @@ const setupPlatformCors = () => {
         callback({responseHeaders});
     });
 };
+
+// ── Python playground window ───────────────────────────────────────────
+// Opens the platform playground page in a dedicated window: full Monaco
+// editor, examples, cloud sandbox and "run locally" through the embedded
+// Link service. The page is remote content, so keep node integration off.
+// If the page cannot be loaded (offline / server down) the main window is
+// notified so the GUI can fall back to the built-in local runner modal.
+const createPythonPlaygroundWindow = () => {
+    if (_windows.pythonPlayground && !_windows.pythonPlayground.isDestroyed()) {
+        _windows.pythonPlayground.focus();
+        return;
+    }
+    const window = new BrowserWindow({
+        icon: path.join(__dirname, './icon/hx-logo.ico'),
+        width: 1280,
+        height: 860,
+        useContentSize: true,
+        title: 'Python',
+        webPreferences: {
+            nodeIntegration: false,
+            contextIsolation: true,
+            sandbox: true
+        }
+    });
+    _windows.pythonPlayground = window;
+
+    // Keep normal navigation inside the platform site; anything else goes
+    // to the system browser.
+    window.webContents.on('will-navigate', (event, navigationUrl) => {
+        if (!navigationUrl.startsWith(PLATFORM_ORIGIN)) {
+            event.preventDefault();
+            shell.openExternal(navigationUrl);
+        }
+    });
+    window.webContents.setWindowOpenHandler(({url}) => {
+        shell.openExternal(url);
+        return {action: 'deny'};
+    });
+
+    window.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL, isMainFrame) => {
+        // -3 (ERR_ABORTED) fires on in-page navigation cancels; ignore it.
+        if (!isMainFrame || errorCode === -3) {
+            return;
+        }
+        log.warn(`Python playground failed to load (${errorCode} ${errorDescription}), falling back to local runner`);
+        if (!window.isDestroyed()) {
+            window.destroy();
+        }
+        if (_windows.main && !_windows.main.isDestroyed()) {
+            _windows.main.webContents.send('python-playground-unavailable');
+        }
+    });
+
+    window.on('closed', () => {
+        delete _windows.pythonPlayground;
+    });
+
+    window.loadURL(`${PLATFORM_ORIGIN}/playground`);
+};
+
+ipcMain.on('open-python-playground-window', () => {
+    createPythonPlaygroundWindow();
+});
 
 // create main BrowserWindow when electron is ready
 app.on('ready', () => {
