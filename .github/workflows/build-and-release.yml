@@ -4,30 +4,23 @@ on:
   push:
     tags:
       - 'v*'
-    paths-ignore:
-      - 'README.md'
-      - 'CHANGE.md'
-      - 'doc/*'
-      - '.github/*'
+
+permissions:
+  contents: write
+
+env:
+  OPENBLOCK_SKIP_LOCAL_DEPS: 1
 
 jobs:
   create-release:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v2
-
-      - name: Get tag
-        id: tag
-        uses: dawidd6/action-get-tag@v1
-
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create draft release
+        uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.tag.outputs.tag }}
-          release_name: HXBlock Desktop ${{ steps.tag.outputs.tag }}
+          draft: true
+          prerelease: false
+          name: HXBlock Desktop ${{ github.ref_name }}
           body: |
             ## Change Log (en)
 
@@ -52,27 +45,33 @@ jobs:
 
                 1. 错误1。
                 2. 错误2。
-          draft: true
-          prerelease: false
 
   build-windows:
     needs: create-release
-    runs-on: windows-2019
+    runs-on: windows-2022
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
       - name: Use Node.js
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v4
         with:
-          node-version: '14.x'
+          node-version: '24.x'
+          cache: 'npm'
 
       - name: Npm Install
-        run: npm install
+        shell: bash
+        run: |
+          git config --global url."https://github.com/".insteadOf ssh://git@github.com/
+          npm ci
+
+      - name: Fetch external resources
+        shell: bash
+        run: git clone --depth=1 https://github.com/haoxuekeji/external-resources.git ../external-resources-v3
 
       - name: Build and Publish
         env:
           GA_ID: ${{ secrets.GA_ID }}
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NODE_ENV: production
           NODE_OPTIONS: --max_old_space_size=4096
         run: npm run publish
@@ -81,20 +80,26 @@ jobs:
     needs: create-release
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
       - name: Use Node.js
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v4
         with:
-          node-version: '14.x'
+          node-version: '24.x'
+          cache: 'npm'
 
       - name: Npm Install
-        run: npm install
+        run: |
+          git config --global url."https://github.com/".insteadOf ssh://git@github.com/
+          npm ci
+
+      - name: Fetch external resources
+        run: git clone --depth=1 https://github.com/haoxuekeji/external-resources.git ../external-resources-v3
 
       - name: Build and Publish
         env:
           GA_ID: ${{ secrets.GA_ID }}
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NODE_ENV: production
           NODE_OPTIONS: --max_old_space_size=8192
           CSC_IDENTITY_AUTO_DISCOVERY: false
