@@ -1,9 +1,7 @@
-const childProcess = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const util = require('util');
 
-const electronPath = require('electron');
 const webpack = require('webpack');
 const merge = require('webpack-merge');
 
@@ -17,7 +15,10 @@ const postcssImport = require('postcss-import');
 
 const isProduction = (process.env.NODE_ENV === 'production');
 
-const electronVersion = childProcess.execSync(`${electronPath} --version`, {encoding: 'utf8'}).trim();
+// Read the version from the package instead of spawning the electron binary:
+// on CI (Ubuntu 24.04) the binary aborts at startup because the SUID
+// chrome-sandbox is not root-owned and unprivileged userns is restricted.
+const electronVersion = require('electron/package.json').version;
 console.log(`Targeting Electron ${electronVersion}`); // eslint-disable-line no-console
 
 const makeConfig = function (defaultConfig, options) {
