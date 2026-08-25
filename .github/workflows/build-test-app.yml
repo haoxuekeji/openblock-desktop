@@ -8,6 +8,10 @@ on:
       - 'CHANGE.md'
       - 'doc/*'
 
+concurrency:
+  group: build-test-app-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   # gui 的 postinstall（setup-local-deps）在 CI 上没有本地多仓可同步，显式跳过
   OPENBLOCK_SKIP_LOCAL_DEPS: 1
