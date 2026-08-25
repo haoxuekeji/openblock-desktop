@@ -36,12 +36,40 @@ jobs:
         shell: bash
         run: git clone --depth=1 https://github.com/haoxuekeji/external-resources.git ../external-resources-v3
 
-      - name: Build Dist
+      - name: Compile
+        shell: bash
         env:
           GA_ID: ${{ secrets.GA_ID }}
           NODE_ENV: production
           NODE_OPTIONS: --max_old_space_size=4096
-        run: npm run dist
+        run: |
+          set -o pipefail
+          { npm run clean && npm run compile; } 2>&1 | tee /tmp/compile.log || {
+            echo "::error title=compile::$(tail -c 2500 /tmp/compile.log | tr '\n' '  ')"
+            exit 1
+          }
+
+      - name: Fetch runtime resources
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run fetch:all 2>&1 | tee /tmp/fetch.log || {
+            echo "::error title=fetch::$(tail -c 2500 /tmp/fetch.log | tr '\n' '  ')"
+            exit 1
+          }
+
+      - name: Package
+        shell: bash
+        env:
+          GA_ID: ${{ secrets.GA_ID }}
+          NODE_ENV: production
+          NODE_OPTIONS: --max_old_space_size=4096
+        run: |
+          set -o pipefail
+          npm run doBuild -- --mode=dist 2>&1 | tee /tmp/package.log || {
+            echo "::error title=package::$(tail -c 2500 /tmp/package.log | tr '\n' '  ')"
+            exit 1
+          }
 
       - name: Archive production artifacts
         uses: actions/upload-artifact@v4
@@ -69,13 +97,38 @@ jobs:
       - name: Fetch external resources
         run: git clone --depth=1 https://github.com/haoxuekeji/external-resources.git ../external-resources-v3
 
-      - name: Build Dist
+      - name: Compile
+        env:
+          GA_ID: ${{ secrets.GA_ID }}
+          NODE_ENV: production
+          NODE_OPTIONS: --max_old_space_size=8192
+        run: |
+          set -o pipefail
+          { npm run clean && npm run compile; } 2>&1 | tee /tmp/compile.log || {
+            echo "::error title=compile::$(tail -c 2500 /tmp/compile.log | tr '\n' '  ')"
+            exit 1
+          }
+
+      - name: Fetch runtime resources
+        run: |
+          set -o pipefail
+          npm run fetch:all 2>&1 | tee /tmp/fetch.log || {
+            echo "::error title=fetch::$(tail -c 2500 /tmp/fetch.log | tr '\n' '  ')"
+            exit 1
+          }
+
+      - name: Package
         env:
           GA_ID: ${{ secrets.GA_ID }}
           NODE_ENV: production
           NODE_OPTIONS: --max_old_space_size=8192
           CSC_IDENTITY_AUTO_DISCOVERY: false
-        run: npm run dist
+        run: |
+          set -o pipefail
+          npm run doBuild -- --mode=dist 2>&1 | tee /tmp/package.log || {
+            echo "::error title=package::$(tail -c 2500 /tmp/package.log | tr '\n' '  ')"
+            exit 1
+          }
 
       - name: Archive production artifacts
         uses: actions/upload-artifact@v4
