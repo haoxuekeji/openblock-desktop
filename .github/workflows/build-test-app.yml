@@ -153,3 +153,62 @@ jobs:
             dist/HXBlock-Desktop*.AppImage
             dist/HXBlock-Desktop*.deb
           retention-days: 1
+
+  build-mac:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24.x'
+          cache: 'npm'
+
+      - name: Npm Install
+        run: |
+          git config --global url."https://github.com/".insteadOf ssh://git@github.com/
+          npm ci
+
+      - name: Fetch external resources
+        run: git clone --depth=1 https://github.com/haoxuekeji/external-resources.git ../external-resources-v3
+
+      - name: Compile
+        env:
+          GA_ID: ${{ secrets.GA_ID }}
+          NODE_ENV: production
+          NODE_OPTIONS: --max_old_space_size=8192
+        run: |
+          set -o pipefail
+          { npm run clean && npm run compile; } 2>&1 | tee /tmp/compile.log || {
+            echo "::error title=compile::$( (grep -iE 'error|fail|cannot|enoent|enospc' /tmp/compile.log || true) | tail -c 2200 | tr '\n' '  ' | tr -s ' ')"
+            exit 1
+          }
+
+      - name: Fetch runtime resources
+        run: |
+          set -o pipefail
+          npm run fetch:all 2>&1 | tee /tmp/fetch.log || {
+            echo "::error title=fetch::$( (grep -iE 'error|fail|cannot|enoent|enospc' /tmp/fetch.log || true) | tail -c 2200 | tr '\n' '  ' | tr -s ' ')"
+            exit 1
+          }
+
+      - name: Package
+        env:
+          GA_ID: ${{ secrets.GA_ID }}
+          NODE_ENV: production
+          NODE_OPTIONS: --max_old_space_size=8192
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+        run: |
+          set -o pipefail
+          npm run doBuild -- --mode=dist 2>&1 | tee /tmp/package.log || {
+            echo "::error title=package::$( (grep -iE 'error|fail|cannot|enoent|enospc' /tmp/package.log || true) | tail -c 2200 | tr '\n' '  ' | tr -s ' ')"
+            exit 1
+          }
+
+      - name: Archive production artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: HXBlock-Desktop-mac
+          path: dist/HXBlock-Desktop*.dmg
+          retention-days: 1
