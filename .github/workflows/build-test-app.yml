@@ -56,11 +56,19 @@ jobs:
 
       - name: Fetch runtime resources
         shell: bash
+        env:
+          # download-tools 用 token 调 GitHub API，避免匿名限流 403
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -o pipefail
           mkdir -p logs
           npm run fetch:all 2>&1 | tee logs/fetch.log || {
             echo "::error title=fetch::$( (grep -iE 'error|fail|cannot|enoent|enospc' logs/fetch.log || true) | tail -c 2200 | tr '\n' '  ' | tr -s ' ')"
+            exit 1
+          }
+          # download-github-release 的失败会被脚本吞掉，显式校验关键资源
+          test -d tools/Python && test -n "$(ls -A firmwares 2>/dev/null)" || {
+            echo "::error title=fetch::tools or firmwares incomplete after fetch:all"
             exit 1
           }
 
@@ -125,10 +133,16 @@ jobs:
           }
 
       - name: Fetch runtime resources
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -o pipefail
           npm run fetch:all 2>&1 | tee /tmp/fetch.log || {
             echo "::error title=fetch::$(tail -c 2500 /tmp/fetch.log | tr '\n' '  ')"
+            exit 1
+          }
+          test -d tools/Python && test -n "$(ls -A firmwares 2>/dev/null)" || {
+            echo "::error title=fetch::tools or firmwares incomplete after fetch:all"
             exit 1
           }
 
@@ -186,10 +200,16 @@ jobs:
           }
 
       - name: Fetch runtime resources
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -o pipefail
           npm run fetch:all 2>&1 | tee /tmp/fetch.log || {
             echo "::error title=fetch::$( (grep -iE 'error|fail|cannot|enoent|enospc' /tmp/fetch.log || true) | tail -c 2200 | tr '\n' '  ' | tr -s ' ')"
+            exit 1
+          }
+          test -d tools/Python && test -n "$(ls -A firmwares 2>/dev/null)" || {
+            echo "::error title=fetch::tools or firmwares incomplete after fetch:all"
             exit 1
           }
 
