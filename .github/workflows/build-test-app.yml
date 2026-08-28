@@ -199,6 +199,9 @@ jobs:
           NODE_ENV: production
           NODE_OPTIONS: --max_old_space_size=8192
           CSC_IDENTITY_AUTO_DISCOVERY: false
+          # dmg-builder 22 默认调 /usr/bin/python（python2），新 macOS 已移除；
+          # 其 vendor 脚本已兼容 python3
+          PYTHON_PATH: /usr/bin/python3
         run: |
           set -o pipefail
           npm run doBuild -- --mode=dist 2>&1 | tee /tmp/package.log || {
