@@ -9,7 +9,7 @@
   "version": "2.3.2-beta",
   "license": "MIT",
   "scripts": {
-    "postinstall": "electron-builder install-app-deps",
+    "postinstall": "electron-builder install-app-deps && node scripts/patch-dmg-builder.js",
     "clean": "rimraf ./dist ./static ./external-resources ./tools ./translations ./firmwares ./drivers",
     "i18n:src": "mkdirp translations/core && format-message extract --out-file translations/core/en.json src/main/**.js",
     "i18n:push": "tx-push-src openblock-editor desktop translations/core/en.json",
