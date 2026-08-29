@@ -4,6 +4,10 @@ directories:
 # Native modules are prebuilt / electron-rebuild'd for the target Electron;
 # skip the slow (and often hanging) npm rebuild during packaging.
 npmRebuild: false
+# Native BLE bindings (N-API prebuilds, dependency of openblock-link)
+# cannot be loaded from inside the asar archive.
+asarUnpack:
+  - "**/node_modules/@stoprocent/**"
 extraFiles: ['LICENSE', 'LICENSE.ScratchFoundation', 'TRADEMARK', "tools", "external-resources", 'firmwares', "drivers"]
 
 appId: haoxuekeji.com.hxblock-desktop

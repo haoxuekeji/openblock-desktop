@@ -51,4 +51,5 @@ Darwin 备份目录 `tools/Python.darwin-bak` 不要放进 `tools/`。
 - 串口设备仍走内置 Link
 - 登录/云存默认 `https://www.haoxuekeji.com`
 - speak / asr / aiChat 走同一公网 API
-- MicroPython 烧录固件前缀：`esp32-ble-openblock` / `esp32c3-ble-openblock`
+- MicroPython 烧录固件前缀：`esp32-ble-openblock` / `esp32c3-ble-openblock` / `esp32s3-ble-openblock`
+- 注意：CI 的 `fetch:firmwares` 只拉上游 openblockcc 发布，不含以上 obble 自定义固件；发版打包必须执行上面的手工拷贝步骤，否则 Link 端烧录会找不到固件
